@@ -1,0 +1,71 @@
+<div class="httpjobform">
+<MudSelect T="string" Label="HTTP Request Method" Variant="Variant.Outlined"
+           Required="true"
+           RequiredError="HTTP action is required"
+           ReadOnly="IsReadOnly"
+           @bind-Value="HttpAction"
+           Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
+    <MudSelectItem T="string" Value="@("Get")">GET</MudSelectItem>
+    <MudSelectItem T="string" Value="@("Post")">POST</MudSelectItem>
+    <MudSelectItem T="string" Value="@("Put")">PUT</MudSelectItem>
+    <MudSelectItem T="string" Value="@("Delete")">DELETE</MudSelectItem>
+</MudSelect>
+
+<MudTextField @bind-Value="DataMapUrl.Value"
+              For="@(() => DataMapUrl.Value)"
+              Required="true"
+              RequiredError="Request URL is required"
+              Margin="Margin.Dense"
+              Variant="Variant.Outlined"
+              ReadOnly="IsReadOnly"
+              Label="Request URL {{$}}" />
+
+<MudExpansionPanels MultiExpansion="true" Dense="true"
+    DisableBorders="true"
+    DisableGutters="true"
+    Elevation="0">
+    <MudExpansionPanel Class="httpjobform__advanced">
+        <TitleContent>
+            <MudText Typo="Typo.body1"><strong>Advanced Settings</strong></MudText>
+        </TitleContent>
+        <ChildContent>
+            <div class="d-flex flex-column gap-1">
+            <MudTextField @bind-Value="DataMapHeaders.Value"
+                        For="@(() => DataMapHeaders.Value)"
+                        Lines="3"
+                        Immediate="true"
+                        Margin="Margin.Dense"
+                        Variant="Variant.Outlined"
+                        ReadOnly="IsReadOnly"
+                        Label="Headers {{$}}" />
+
+            <MudTextField @bind-Value="DataMapParameters.Value"
+                        For="@(() => DataMapParameters.Value)"
+                        Lines="3"
+                        Immediate="true"
+                        Margin="Margin.Dense"
+                        Variant="Variant.Outlined"
+                        ReadOnly="IsReadOnly"
+                        Label="Params {{$}}" />
+
+            <MudNumericField @bind-Value="@TimeoutInSec"
+                            For="@(() => TimeoutInSec)"
+                            Label="Number of seconds to wait before HTTP request timeout"
+                            HelperText="Default is 100 seconds. Use 0 or negative value to indicate no timeout"
+                            Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
+                            ReadOnly="IsReadOnly"
+                            Min="-1"
+                            Step="1"
+                            T="int?"
+                            />
+
+            <MudCheckBox @bind-Checked="IgnoreSsl"
+                        ReadOnly="IsReadOnly"
+                        Label="Allow insecure SSL connection"
+                        aria-label="When checked, it will ignore SSL certificate validation."></MudCheckBox>
+            </div>
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+</div>

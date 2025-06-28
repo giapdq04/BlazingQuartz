@@ -1,0 +1,259 @@
+﻿@page "/logviewer"
+@using BlazeQuartz.Core.Services
+@inject LogService LogService
+@using System.Data;
+@using System.Linq;
+
+<PageTitle>LogViewer</PageTitle>
+<MudCard>
+    <MudCardContent>
+        <MudTable T="@LogEntry" @ref="table" ServerData="LoadServerData"
+                  Dense="true"
+                  Hover="true"
+                  RowsPerPage="@rowsPerPage"
+                  RowsPerPageOptions="new int[] { 5, 10, 20, 50 }"
+                  OnRowsPerPageChanged="UpdateRowsPerPage">
+
+            <ToolBarContent>
+                <MudText Typo="Typo.h4">LogViewer</MudText>
+                <MudSpacer />
+                <div style="width: 100%; display: flex; align-items: center;">
+                    @*<div style="width: 150px;">
+                            <MudDatePicker Label="Select a date" @bind-Date="selectedDate" />
+                        </div>
+                        <div style="width: 150px;">
+                            <MudDatePicker Label="Select a date" @bind-Date="selectedDate" Variant="Variant.Outlined" />
+                        </div>*@
+
+                    <div style="width:250px; flex-grow: 1; text-align: center;">
+                        <MudTextField T="string"
+                                      @bind-Value="searchTerm"
+                                      Placeholder="Tìm kiếm log..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="Icons.Material.Filled.Search"
+                                      Immediate="true"
+                                      TextChanged="@(e => OnSearchChanged())" />
+                    </div>
+                    <div style="width: 15%;">
+                        <MudSelect T="string" Label="Module" Dense="true" Value="@selectedMod" ValueChanged="OnModChanged">
+                            @foreach (var mod in Mod)
+                            {
+                                <MudSelectItem Value="@mod.ModID">@mod.ModName</MudSelectItem>
+                            }
+                        </MudSelect>
+
+                    </div>
+                    @{
+                        if (selectedMod != "-1")
+                        {
+                            if (selectedMod ==  "IMP")
+                            {
+                                <div style="width: 15%;">
+
+                                    <MudSelect T="int" Label="Customer" Dense="true" Value="@selectedCustomer" ValueChanged="OnCustomerChanged">
+                                        @foreach (var customer in Customers)
+                                        {
+                                            <MudSelectItem Value="@customer.CusID">@customer.CustomerName</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </div>
+                            }
+
+                        }
+
+                        if (selectedMod == "X12")
+                        {
+                            <div style="width: 15%;">
+                                <MudSelect T="string" Label="EDI Type" Dense="true" Value="@selectedEdi" ValueChanged="OnEDIChanged">
+                                    @foreach (var edi in Edi)
+                                    {
+                                        <MudSelectItem Value="@edi.Name">@edi.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </div>
+                        }
+
+                    }
+
+
+                    <div style="width: 15%;">
+                        <MudSelect T="LogLevel" Value="selectedLevel" ValueChanged="OnLevelChanged" Label="Log Level?" Dense="true">
+                            <MudSelectItem Value="LogLevel.All">Tất cả</MudSelectItem>
+                            <MudSelectItem Value="LogLevel.Information">Information</MudSelectItem>
+                            <MudSelectItem Value="LogLevel.Warning">Warning</MudSelectItem>
+                            <MudSelectItem Value="LogLevel.Error">Error</MudSelectItem>
+                        </MudSelect>
+                    </div>
+                    <div>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Sharp.Search"
+                                   OnClick="OnSearchChanged">+(*.-).</MudButton>
+                    </div>
+                </div>
+
+            </ToolBarContent>
+            <HeaderContent>
+                @*<MudTh Style="width: 50px;text-align: center;">ID</MudTh>*@
+                <MudTh Style="width: 50px;text-align: center;">Module</MudTh>
+                <MudTh Style="width: 50px;text-align: center;">Type</MudTh>
+                <MudTh Style="width: 200px;text-align: center;">Timestamp</MudTh>
+                <MudTh Style="width: 120px;text-align: center;">Level</MudTh>
+                <MudTh>Message</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="log">
+                @*<MudTd Style="height: 35px; padding:0px">@log.Id</MudTd>*@
+                <MudTd Style="height: 35px; padding: 0px; text-align: center;">@log.Log_Module</MudTd>
+                <MudTd Style="height: 35px; padding: 0px; text-align: center;">@log.Log_Module_Type</MudTd>
+                <MudTd Style="height: 35px; padding:0px">@log.Timestamp</MudTd>
+                <MudTd Style="height: 35px; text-align: center;padding:0px">
+                    <MudChip T="LogLevel" Color="@GetColor(log.Level)" style="padding:0px">
+                        @log.Level.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd Style="height: 35px;">@log.Log_Message</MudTd>
+            </RowTemplate>
+
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private DateTime? selectedDate { get; set; } = DateTime.Now;
+    private string searchTerm = "";
+    private LogLevel selectedLevel = LogLevel.All;
+    private int rowsPerPage = 100;
+    private MudTable<LogEntry> table;
+
+    private List<CustomerModel> Customers = new();
+    private List<ModModel> Mod = new();
+    private List<EdiModel> Edi = new();
+    private int selectedCustomer = -1;
+    private string selectedMod = "-1";
+    private string selectedEdi = "Tất cả";
+
+    protected override void OnInitialized()
+    {
+        // Tạo DataTable giả lập
+        DataTable dt = new DataTable();
+        dt.Columns.Add("CusID", typeof(int));
+        dt.Columns.Add("Customer", typeof(string));
+        dt.Rows.Add(-1, "Tất cả");
+        dt.Rows.Add(28, "247");
+        dt.Rows.Add(2, "B2G");
+        dt.Rows.Add(27, "CD");
+        dt.Rows.Add(26, "OS");
+        dt.Rows.Add(13, "TUISS NL");
+        dt.Rows.Add(23, "TUISS IT");
+        dt.Rows.Add(20, "TUISS SE");
+
+        // Chuyển DataTable thành danh sách CustomerModel
+        Customers = dt.AsEnumerable().Select(row => new CustomerModel
+        {
+            CusID = row.Field<int>("CusID"),
+            CustomerName = row.Field<string>("Customer")
+        }).ToList();
+
+
+        DataTable dtModule = new DataTable();
+        dtModule.Columns.Add("ModID", typeof(string));
+        dtModule.Columns.Add("ModName", typeof(string));
+        dtModule.Rows.Add("-1", "Tất cả");
+        dtModule.Rows.Add("IMP", "IMP");
+        dtModule.Rows.Add("X12", "X12");
+        dtModule.Rows.Add("Xml2Tkis", "Xml2Tkis");
+        // Chuyển DataTable thành danh sách ModModel
+        Mod = dtModule.AsEnumerable().Select(row => new ModModel
+        {
+            ModID = row.Field<string>("ModID"),
+            ModName = row.Field<string>("ModName")
+        }).ToList();
+
+        DataTable dtEDI = new DataTable();
+        dtEDI.Columns.Add("ID", typeof(int));
+        dtEDI.Columns.Add("Name", typeof(string));
+        dtEDI.Rows.Add(-1, "Tất cả");
+        dtEDI.Rows.Add(850, "850");
+        dtEDI.Rows.Add(855, "855");
+        dtEDI.Rows.Add(856, "856");
+        dtEDI.Rows.Add(810, "810");
+        //dtEDI.ReadXml(@"D:\Working\Scheduler\src\BlazingQuartz\BlazingQuartz\Xml\Edis.xml");
+        // Chuyển DataTable thành danh sách ModModel
+        Edi = dtEDI.AsEnumerable().Select(row => new EdiModel
+        {
+            ID = row.Field<int>("ID"),
+            Name = row.Field<string>("Name")
+        }).ToList();
+    }
+
+    private async Task<TableData<LogEntry>> LoadServerData(TableState state)
+    {
+        var result = await LogService.GetFilteredLogsAsync(state.Page, state.PageSize, searchTerm, selectedLevel, selectedCustomer, selectedMod, selectedEdi);
+        return new TableData<LogEntry> { Items = result.Items, TotalItems = result.TotalCount };
+    }
+    private async Task OnSearchChanged()
+    {
+        Console.WriteLine("OnSearchChanged changed!");
+        await table.ReloadServerData();
+    }
+
+    private async Task OnLevelChanged(LogLevel level)
+    {
+        Console.WriteLine("OnLevelChanged changed!");
+        selectedLevel = level;
+        await table.ReloadServerData(); // Gọi reload bảng
+    }
+    private async Task OnCustomerChanged(int Cusid)
+    {
+
+        Console.WriteLine("OnCustomerChanged changed!");
+        selectedCustomer = Cusid;
+        await table.ReloadServerData();
+    }
+    private async Task OnEDIChanged(string EdiType)
+    {
+        selectedEdi = EdiType;
+        await table.ReloadServerData();
+    }
+
+    private async Task OnModChanged(string _mod)
+    {
+        selectedEdi = "Tất cả";
+        Console.WriteLine("OnModChanged changed!");
+        selectedMod = _mod;
+
+        await Task.Delay(1);
+
+    }
+
+    private void UpdateRowsPerPage(int newRowsPerPage)
+    {
+        rowsPerPage = newRowsPerPage;
+    }
+
+    private Color GetColor(string level) => level switch
+    {
+        "Information" => Color.Primary,
+        "Warning" => Color.Warning,
+        "Error" => Color.Error,
+        _ => Color.Default
+    };
+
+    public class CustomerModel
+    {
+        public int CusID { get; set; }
+        public string? CustomerName { get; set; }
+    }
+    public class ModModel
+    {
+        public string ModID { get; set; }
+        public string? ModName { get; set; }
+    }
+    public class EdiModel
+    {
+        public int ID { get; set; }
+        public string? Name { get; set; }
+    }
+}

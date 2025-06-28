@@ -1,0 +1,54 @@
+﻿@page "/login"
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Login</PageTitle>
+
+<MudContainer Class="d-flex justify-center align-center min-vh-100">
+    <MudCard Class="p-6" Style="width: 400px;">
+        <MudCardContent>
+            <MudText Typo="Typo.h5" Class="mb-4">Login</MudText>
+
+            <MudTextField @bind-Value="_username" Label="Username" Required="true"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" />
+
+            <MudTextField @bind-Value="_password" Label="Password" Required="true"
+                          Type="password" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock" />
+
+            @*<MudAlert Severity="Severity.Error" Dense="true" Style="display: @(string.IsNullOrEmpty(_errorMessage) ? "none" : "block");">
+                    @_errorMessage
+                </MudAlert>*@
+
+            <div style="@(_errorMessage == null ? "display: none;" : "display: block;")">
+                Đăng nhập thất bại!
+            </div>
+
+
+            <MudButton OnClick="OnLogin" Color="Color.Primary" Variant="Variant.Filled" Class="mt-4" FullWidth>
+                Login
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string _username = "";
+    private string _password = "";
+    private string _errorMessage = "";
+
+    private async Task OnLogin()
+    {
+        _errorMessage = "";
+
+        // Giả lập xác thực (thay thế bằng gọi API thực tế)
+        if (_username == "admin" && _password == "123456")
+        {
+            // Chuyển hướng sau khi đăng nhập thành công
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            _errorMessage = "Invalid username or password.";
+        }
+    }
+}

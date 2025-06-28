@@ -1,0 +1,55 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<PageTitle>BlazingQuartz</PageTitle>
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@*<AuthorizeView>
+    <NotAuthorized>
+        @code {
+            private bool _hasNavigated = false;
+
+            protected override async Task OnAfterRenderAsync(bool firstRender)
+            {
+                if (firstRender && !_hasNavigated)
+                {
+                    _hasNavigated = true;
+                    if (Navigation.Uri != Navigation.BaseUri + "login")
+                    {
+                        Navigation.NavigateTo("login", forceLoad: true);
+                    }
+                }
+            } 
+        }
+    </NotAuthorized>
+
+    <Authorized>*@
+        <MudLayout>
+            <MudAppBar Elevation="1" Style="@($"background:{Colors.LightBlue.Darken4};")">
+                <MudText Typo="Typo.h5" Class="ml-3">BlazeBlinds</MudText>
+                <MudButton Href="overview" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Overview)">Overview</MudButton>
+                <MudButton Href="schedules" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Schedules)">Schedules</MudButton>
+                <MudButton Href="history" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.History)">History</MudButton>
+                <MudButton Href="fileupload" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FileUpload)">File Upload</MudButton>
+                <MudButton Href="logviewer" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.LogViewer)">Log Viewer</MudButton>
+                @* <MudButton Href="foldertree" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FolderTree)">File Upload</MudButton> *@
+                @* <MudButton Href="triggers" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Triggers)">Triggers</MudButton>
+
+                    <MudButton Href="calendars" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Calendars)">Calendars</MudButton> *@
+                <MudSpacer />
+                @*<LoginDisplay />*@
+            </MudAppBar>
+
+
+
+        </MudLayout>
+
+
+    @*</Authorized>
+</AuthorizeView>*@
+<MudMainContent>
+    @Body
+</MudMainContent>

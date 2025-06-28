@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <StaticWebAssetFingerprintingEnabled>false</StaticWebAssetFingerprintingEnabled>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.3" />
+    <PackageReference Include="MudBlazor" Version="6.19.1" />
+    <PackageReference Include="CronExpressionDescriptor" Version="2.33.0" />
+    <PackageReference Include="LibSassBuilder" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Pages\" />
+    <None Remove="Pages\BlazingQuartzUI\" />
+    <None Remove="Shared\" />
+    <None Remove="MudBlazor" />
+    <None Remove="Extensions\" />
+    <None Remove="Services\" />
+    <None Remove="Pages\BlazingQuartzUI\Calendars\" />
+    <None Remove="Pages\BlazingQuartzUI\History\" />
+	<None Remove="Pages\BlazingQuartzUI\FileUpload\" />
+    <None Remove="Pages\BlazingQuartzUI\Schedules\" />
+    <None Remove="Pages\BlazingQuartzUI\Triggers\" />
+    <None Remove="Pages\BlazingQuartzUI\Overview\" />
+    <None Remove="System.Linq.Async" />
+    <None Remove="Components\" />
+    <None Remove="CronExpressionDescriptor" />
+    <None Remove="LibSassBuilder" />
+    <None Remove="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <None Remove="Jobs\" />
+    <None Remove="Jobs\UI\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Shared\" />
+    <Folder Include="wwwroot\css\" />
+    <Folder Include="Extensions\" />
+    <Folder Include="Services\" />
+    <Folder Include="Pages\BlazingQuartzUI\Calendars\" />
+    <Folder Include="Pages\BlazingQuartzUI\History\" />
+    <Folder Include="Pages\BlazingQuartzUI\Schedules\" />
+    <Folder Include="Pages\BlazingQuartzUI\Triggers\" />
+    <Folder Include="Pages\BlazingQuartzUI\Overview\" />
+    <Folder Include="Jobs\" />
+    <Folder Include="Jobs\UI\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="wwwroot\css\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BlazingQuartz.Core\SchedulerQuartz.Core.csproj" />
+    <ProjectReference Include="..\BlazingQuartz.Jobs.Abstractions\SchedulerQuartz.Jobs.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

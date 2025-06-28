@@ -1,0 +1,70 @@
+﻿@page "/foldertree"
+@using Microsoft.Extensions.Configuration
+@using ScheduleAPI.Controllers
+@using System.Net.Http.Json 
+@inject IConfiguration Configuration
+
+@inject HttpClient Http
+
+@* <h3>Danh sách thư mục</h3> *@
+@code {
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {  
+        string? RootPath = Configuration["AppSettings:RootDirX12"];
+        rootFolder = await Http.GetFromJsonAsync<FolderNode>($"https://localhost:7290/api/folders/tree?basePath={RootPath}");
+    }
+}
+
+@* <button @onclick="LoadFolders">Tải danh sách thư mục</button> *@
+  
+ 
+@if (rootFolder != null)
+{
+    <TreeNode Node="@rootFolder" OnFolderSelected="SelectFolder" />
+}
+
+@if (!string.IsNullOrEmpty(selectedFolderPath))
+{
+    <p>📁<b>@selectedFolderPath</b></p>
+    <InputFile OnChange="HandleFileUpload" />
+}
+@if (!string.IsNullOrEmpty(message))
+{
+    <p>@message</p>
+}
+@code {
+    private FolderNode? rootFolder;
+    private string selectedFolderPath = "";
+ 
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        if (string.IsNullOrEmpty(selectedFolderPath))
+        {
+            message = "Vui lòng chọn thư mục!";
+            return;
+        }
+
+        var file = e.File;
+        if (file == null) return;
+
+        try
+        {
+            var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(file.OpenReadStream()), "file", file.Name);
+
+            var response = await Http.PostAsync($"https://localhost:7290/api/files/upload?folderPath={selectedFolderPath}", content);
+            var result = await response.Content.ReadAsStringAsync();
+            message = response.IsSuccessStatusCode ? "Upload thành công!" : $"Lỗi: {result}";
+        }
+        catch (Exception ex)
+        {
+            message = $"Lỗi: {ex.Message}";
+        }
+    }
+    private void SelectFolder(string path)
+    {
+        selectedFolderPath = path;
+    }
+}

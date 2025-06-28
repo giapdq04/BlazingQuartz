@@ -1,0 +1,93 @@
+﻿@inject IWebHostEnvironment Env
+@using Microsoft.AspNetCore.Hosting
+@using ScheduleAPI.Controllers
+@code {
+    [Parameter] public FolderNode Node { get; set; } = default!;
+    [Parameter] public EventCallback<string> OnFolderSelected { get; set; }
+    private bool isExpanded = false;
+    bool isSelected = false;
+}
+
+<div style="margin-left: 20px;"> 
+    <button @onclick="ToggleExpand" @ondblclick="() => {
+            OnFolderSelected.InvokeAsync(Node.FullPath);
+            isSelected= true;
+        }">
+        @((Node.FullPath != null && isExpanded) ? "📂" : "📁") @Node.Name
+    </button>
+     
+
+    @if (isExpanded)
+    {
+        @foreach (var subFolder in Node.SubFolders)
+        {
+            <TreeNode Node="@subFolder" OnFolderSelected="OnFolderSelected" />
+        }
+    }
+@* 
+    <h2>Danh sách thư mục</h2>
+
+    <ul>
+        @foreach (var folder in Directories)
+        {
+            <li>
+                <button @onclick="() => LoadFolderContents(folder)">📁 @folder</button>
+            </li>
+        }
+    </ul>
+
+    @if (SelectedFolder != null)
+    {
+        <h3>Nội dung thư mục: @SelectedFolder</h3>
+
+        <h4>Thư mục con:</h4>
+        <ul>
+            @foreach (var subFolder in SubDirectories)
+            {
+                <li>📂 @subFolder</li>
+            }
+        </ul>
+
+        <h4>Files:</h4>
+        <ul>
+            @foreach (var file in Files)
+            {
+                <li>📄 @file</li>
+            }
+        </ul>
+    } *@
+
+    @code {
+        private List<string> Directories = new();
+        private List<string> SubDirectories = new();
+        private List<string> Files = new();
+        private string? SelectedFolder;
+
+        protected override void OnInitialized()
+        {
+            // Lấy danh sách thư mục gốc
+            string rootPath = Env.ContentRootPath;
+            Directories = Directory.GetDirectories(rootPath).Select(Path.GetFileName).ToList();
+        }
+
+        private void LoadFolderContents(string folderName)
+        {
+            string rootPath = Env.ContentRootPath;
+            string fullPath = Path.Combine(rootPath, folderName);
+
+            if (Directory.Exists(fullPath))
+            {
+                SelectedFolder = folderName;
+                SubDirectories = Directory.GetDirectories(fullPath).Select(Path.GetFileName).ToList();
+                Files = Directory.GetFiles(fullPath).Select(Path.GetFileName).ToList();
+            }
+        }
+    }
+</div> 
+@code {
+    private void ToggleExpand()
+    {
+        isExpanded = !isExpanded;
+    }
+    
+}
