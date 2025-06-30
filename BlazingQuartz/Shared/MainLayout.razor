@@ -1,33 +1,27 @@
 ﻿@inherits LayoutComponentBase
+@using BlazeQuartz.Core.Enums
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using MudBlazor
 @inject NavigationManager Navigation
-
+@inject ProtectedSessionStorage SessionStorage
+@inject ISnackbar Snackbar
+@inject CustomAuthStateProvider authStateProvider
 <PageTitle>BlazingQuartz</PageTitle>
 
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@*<AuthorizeView>
-    <NotAuthorized>
-        @code {
-            private bool _hasNavigated = false;
+<AuthorizeView>
 
-            protected override async Task OnAfterRenderAsync(bool firstRender)
-            {
-                if (firstRender && !_hasNavigated)
-                {
-                    _hasNavigated = true;
-                    if (Navigation.Uri != Navigation.BaseUri + "login")
-                    {
-                        Navigation.NavigateTo("login", forceLoad: true);
-                    }
-                }
-            } 
-        }
-    </NotAuthorized>
-
-    <Authorized>*@
+    <Authorized>
         <MudLayout>
+            @if (_loading)
+            {
+                <MudOverlay Visible="true" DarkBackground="true">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </MudOverlay>
+            }
             <MudAppBar Elevation="1" Style="@($"background:{Colors.LightBlue.Darken4};")">
                 <MudText Typo="Typo.h5" Class="ml-3">BlazeBlinds</MudText>
                 <MudButton Href="overview" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Overview)">Overview</MudButton>
@@ -35,21 +29,23 @@
                 <MudButton Href="history" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.History)">History</MudButton>
                 <MudButton Href="fileupload" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FileUpload)">File Upload</MudButton>
                 <MudButton Href="logviewer" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.LogViewer)">Log Viewer</MudButton>
-                @* <MudButton Href="foldertree" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FolderTree)">File Upload</MudButton> *@
-                @* <MudButton Href="triggers" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Triggers)">Triggers</MudButton>
+                @* <MudButton Href="foldertree" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FolderTree)">File Upload</MudButton> *@  
+                @* <MudButton Href="triggers" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Triggers)">Triggers</MudButton>  
 
-                    <MudButton Href="calendars" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Calendars)">Calendars</MudButton> *@
+                    <MudButton Href="calendars" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Calendars)">Calendars</MudButton> *@  
                 <MudSpacer />
-                @*<LoginDisplay />*@
+                <span style="margin-right: 16px;">Welcome, <b>@context.User.Identity?.Name</b>!</span>
+                @if (context.User.IsInRole(UserRoles.Admin))
+                {
+                    <span>You are an administrator 🧑‍💼</span>
+                }
+                <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="@Logout">Log Out</MudButton>
             </MudAppBar>
-
-
-
         </MudLayout>
 
 
-    @*</Authorized>
-</AuthorizeView>*@
+    </Authorized>
+</AuthorizeView>
 <MudMainContent>
     @Body
 </MudMainContent>

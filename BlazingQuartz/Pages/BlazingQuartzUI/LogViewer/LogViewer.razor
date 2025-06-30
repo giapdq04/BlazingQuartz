@@ -1,4 +1,5 @@
 ﻿@page "/logviewer"
+@attribute [Authorize]
 @using BlazeQuartz.Core.Services
 @inject LogService LogService
 @using System.Data;
@@ -110,7 +111,7 @@
                         @log.Level.ToString()
                     </MudChip>
                 </MudTd>
-                <MudTd Style="height: 35px;">@log.Log_Message</MudTd>
+                <MudTd Style="height: 35px;">@log.Message</MudTd>
             </RowTemplate>
 
             <PagerContent>

@@ -1,54 +1,82 @@
 ﻿@page "/login"
+@using System.Net.Http.Json
+@using BlazeQuartz.Core.Models
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject HttpClient Http
+@inject ProtectedSessionStorage SessionStorage
+@inject AuthService AuthService
+@inject CustomAuthStateProvider authStateProvider
 
 <PageTitle>Login</PageTitle>
 
 <MudContainer Class="d-flex justify-center align-center min-vh-100">
-    <MudCard Class="p-6" Style="width: 400px;">
+    <MudCard Class="p-6 shadow-lg" Style="width: 400px; border-radius: 16px; background-color: #ffffff;">
         <MudCardContent>
-            <MudText Typo="Typo.h5" Class="mb-4">Login</MudText>
+            <MudText Typo="Typo.h1" Class="mb-4" Align="Align.Center" Color="Color.Primary"
+                     Style="font-size: 30px;font-weight:700;background: linear-gradient(135deg, #215798, #00f2fe);-webkit-background-clip: text;-webkit-text-fill-color: transparent;">
+                Welcome Back
+            </MudText>
+            <MudText Typo="Typo.subtitle1" Class="mb-4" Align="Align.Center" Color="Color.Secondary">
+                Login to your account
+            </MudText>
 
-            <MudTextField @bind-Value="_username" Label="Username" Required="true"
-                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" />
+            <EditForm Model="_loginModel" OnValidSubmit="OnLogin">
+                <MudTextField @bind-Value="_loginModel.Username"
+                              Label="Username"
+                              Required="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Person"
+                              Variant="Variant.Filled"
+                              Class="mb-3"
+                              Style="border-radius: 8px;" />
 
-            <MudTextField @bind-Value="_password" Label="Password" Required="true"
-                          Type="password" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock" />
+                <MudTextField @bind-Value="_loginModel.Password"
+                              Label="Password"
+                              Required="true"
+                              InputType="InputType.Password"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Lock"
+                              Variant="Variant.Filled"
+                              Class="mb-3"
+                              Style="border-radius: 8px;" />
 
-            @*<MudAlert Severity="Severity.Error" Dense="true" Style="display: @(string.IsNullOrEmpty(_errorMessage) ? "none" : "block");">
-                    @_errorMessage
-                </MudAlert>*@
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">
+                        @_errorMessage
+                    </MudAlert>
+                }
 
-            <div style="@(_errorMessage == null ? "display: none;" : "display: block;")">
-                Đăng nhập thất bại!
-            </div>
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled" Class="mt-4" FullWidth
+                           Style="color: white; border-radius: 8px; background: linear-gradient(135deg, #215798, #00f2fe);">
+                    Login
+                </MudButton>
+            </EditForm>
 
-
-            <MudButton OnClick="OnLogin" Color="Color.Primary" Variant="Variant.Filled" Class="mt-4" FullWidth>
-                Login
-            </MudButton>
         </MudCardContent>
     </MudCard>
 </MudContainer>
 
 @code {
-    private string _username = "";
-    private string _password = "";
     private string _errorMessage = "";
+    private User _loginModel = new();
 
     private async Task OnLogin()
     {
         _errorMessage = "";
 
-        // Giả lập xác thực (thay thế bằng gọi API thực tế)
-        if (_username == "admin" && _password == "123456")
+        var user = await AuthService.Login(_loginModel);
+
+        if (user != null)
         {
-            // Chuyển hướng sau khi đăng nhập thành công
+            await authStateProvider.MarkUserAsAuthenticated(user);
             Navigation.NavigateTo("/");
         }
         else
         {
-            _errorMessage = "Invalid username or password.";
+            _errorMessage = "Sai tài khoản hoặc mật khẩu";
         }
     }
 }

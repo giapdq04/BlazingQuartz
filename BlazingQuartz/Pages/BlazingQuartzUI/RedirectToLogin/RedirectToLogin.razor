@@ -1,0 +1,20 @@
+﻿@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage SessionStorage
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Navigation.Uri != Navigation.BaseUri + "login")
+            {
+                var result = await SessionStorage.GetAsync<bool>("isLoggedIn");
+                if (!result.Success || !result.Value)
+                {
+                    Navigation.NavigateTo("login", forceLoad: true);
+                }
+            }
+        }
+    }
+}

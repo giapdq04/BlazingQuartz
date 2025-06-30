@@ -17,8 +17,8 @@ namespace BlazeQuartz.Core.Services
         public async Task<(IEnumerable<LogEntry> Items, int TotalCount)> GetFilteredLogsAsync(int page, int pageSize, string searchTerm, LogLevel level, int _cusid, string _Log_Module, string _log_type)
         {
 
-            string dbPath = _config["AppSettings:dbPath"];
-            _connectionString = $"Data Source={dbPath}";
+            //string dbPath = _config["AppSettings:dbPath"];
+            //_connectionString = $"Data Source={dbPath}";
             using var connection = new SqliteConnection(_connectionString);
             int offset = page * pageSize;
 
@@ -57,7 +57,7 @@ namespace BlazeQuartz.Core.Services
             parameters.Add("PageSize", pageSize);
             parameters.Add("Offset", offset);
 
-             var logs = await connection.QueryAsync<LogEntry>(query, parameters);
+            var logs = await connection.QueryAsync<LogEntry>(query, parameters);
             int totalCount = await connection.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Logs WHERE 1=1", parameters);
 
             return (logs, totalCount);

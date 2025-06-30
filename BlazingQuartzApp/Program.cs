@@ -1,10 +1,8 @@
 ﻿using BlazeQuartz;
 using BlazeQuartz.Core.Services;
-using BlazeQuartz.Extensions;
-
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
- 
+
 
 using Quartz;
 
@@ -38,7 +36,7 @@ builder.Services.Configure<QuartzOptions>(options =>
         }
     }
 });
- 
+
 
 // Add the required Quartz.NET services 
 builder.Services.AddQuartz();
@@ -48,6 +46,7 @@ builder.Services.AddQuartzHostedService(
 #endregion Configure Quartz3
 
 // Add services to the container.
+builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<LogService>();
 
 builder.Services.AddRazorPages();
@@ -55,9 +54,18 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddBlazingQuartzUI(builder.Configuration.GetSection("BlazingQuartz"),
     connectionString: builder.Configuration.GetConnectionString("BlazingQuartzDb"));
 
-// Cấu hình Authentication
-builder.Services.AddAuthenticationCore();
-//builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+// Thêm các service cần thiết cho authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "Cookies";
+    options.DefaultSignInScheme = "Cookies";
+})
+.AddCookie("Cookies");
+
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthStateProvider>());
 builder.Services.AddScoped<ProtectedSessionStorage>();
 
 //builder.Services.AddControllersWithViews()
@@ -80,6 +88,8 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Thêm middleware authentication trước UseAuthorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseBlazingQuartzUI();

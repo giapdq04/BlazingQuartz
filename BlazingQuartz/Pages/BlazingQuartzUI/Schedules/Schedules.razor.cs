@@ -1,19 +1,18 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using BlazeQuartz.Components;
+﻿using BlazeQuartz.Components;
 using BlazeQuartz.Core;
 using BlazeQuartz.Core.Data;
+using BlazeQuartz.Core.Enums;
 using BlazeQuartz.Core.Events;
 using BlazeQuartz.Core.Models;
 using BlazeQuartz.Core.Services;
-using BlazeQuartz.Jobs.Abstractions;
 using BlazeQuartz.Extensions;
+using BlazeQuartz.Jobs.Abstractions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using Quartz;
+using System.Collections.ObjectModel;
 
 namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 {
@@ -25,6 +24,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
         [Inject] private IDialogService DialogSvc { get; set; } = null!;
         [Inject] private ILogger<Schedules> _logger { get; set; } = null!;
         [Inject] private ISnackbar Snackbar { get; set; } = null!;
+        [Inject] AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
 
         private ObservableCollection<ScheduleModel> ScheduledJobs { get; set; } = new();
         private string? SearchJobKeyword;
@@ -71,7 +71,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
         //     Selector = (e) => e.JobGroup
         // };
 
-        Func<ScheduleModel, object> _groupDefinition = x => 
+        Func<ScheduleModel, object> _groupDefinition = x =>
         {
             return x.JobGroup;
         };
@@ -178,7 +178,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
                     _logger.LogWarning(ex, "Cannot update trigger status. Found more than one schedule with trigger {triggerKey}", triggerKey);
                     return;
                 }
-                
+
                 if (model is not null)
                 {
                     if (model.JobName == null || model.JobStatus == JobStatus.Error)
@@ -245,7 +245,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         private async void SchedulerListenerSvc_OnJobScheduled(object? sender, EventArgs<ITrigger> e)
         {
-            if (!_filter.IncludeSystemJobs && (e.Args.JobKey.Group == Constants.SYSTEM_GROUP || 
+            if (!_filter.IncludeSystemJobs && (e.Args.JobKey.Group == Constants.SYSTEM_GROUP ||
                 e.Args.Key.Group == Constants.SYSTEM_GROUP))
             {
                 // system job is not visible, skip this event
@@ -296,7 +296,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
             ScheduledJobs.Clear();
 
             var jobs = SchedulerSvc.GetAllJobsAsync(_filter);
-            await foreach(var job in jobs)
+            await foreach (var job in jobs)
             {
                 ScheduledJobs.Add(job);
             }
@@ -335,7 +335,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
                     {
                         schModel.ExceptionMessage = latestLog.GetShortExceptionMessage();
                     }
-                }   
+                }
             }
         }
 
@@ -350,7 +350,17 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         private async Task OnNewSchedule()
         {
-            var options = new DialogOptions {
+            // Kiểm tra role
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+            if (!authState.User.IsInRole(UserRoles.Admin))
+            {
+                Snackbar.Add("Only administrators can create new schedules", Severity.Warning);
+                return;
+            }
+
+            var options = new DialogOptions
+            {
                 CloseOnEscapeKey = true,
                 FullWidth = true,
                 MaxWidth = MaxWidth.Medium
@@ -363,7 +373,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
             // create schedule
             (JobDetailModel jobDetail, TriggerDetailModel triggerDetail) = ((JobDetailModel, TriggerDetailModel))result.Data;
-            
+
             try
             {
                 await SchedulerSvc.CreateSchedule(jobDetail, triggerDetail);
@@ -637,7 +647,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
                     skipCount++;
                     return Task.FromResult(true);
                 }
-                
+
                 ScheduledJobs.Remove(model);
                 return SchedulerSvc.DeleteSchedule(model);
             });
