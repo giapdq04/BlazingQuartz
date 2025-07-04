@@ -11,6 +11,7 @@ namespace BlazeQuartz
         FileUpload,
         FolderTree,
         LogViewer,
+        Users,
         Login,
         None
         

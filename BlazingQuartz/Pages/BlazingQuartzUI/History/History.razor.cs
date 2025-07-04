@@ -1,5 +1,4 @@
-﻿using System;
-using BlazeQuartz.Components;
+﻿using BlazeQuartz.Components;
 using BlazeQuartz.Core.Data;
 using BlazeQuartz.Core.Data.Entities;
 using BlazeQuartz.Core.Models;

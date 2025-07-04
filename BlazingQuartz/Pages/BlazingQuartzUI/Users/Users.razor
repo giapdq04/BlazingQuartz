@@ -1,0 +1,249 @@
+﻿@page "/users"
+@attribute [Authorize]
+@using BlazeQuartz.Components
+@using BlazeQuartz.Core.Models
+@inject BlazeQuartz.Core.Services.AuthService AuthService
+@using System.Timers
+@inject MudBlazor.IDialogService DialogService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using BlazeQuartz.Core.Enums
+
+<PageTitle>User</PageTitle>
+
+<MudCard>
+    <MudCardContent>
+        <MudTable T="User"
+                  Items="pagedUsers"
+                  Dense="true"
+                  Hover="true"
+                  RowsPerPage="@rowsPerPage"
+                  RowsPerPageOptions="new int[] { 5, 10, 20, 50 }"
+                  @ref="table"
+                  ServerData="LoadServerData">
+
+            <ToolBarContent>
+                <div style="display: flex; align-items: center; width: 100%;">
+                    <MudText Typo="Typo.h4" Style="white-space: nowrap; margin-right: 16px;">User List</MudText>
+                    <MudSpacer />
+                    <div style="width: 100%; max-width: 400px; display: flex; gap: 8px;">
+                        <MudTextField T="string"
+                                      @bind-Value="searchTerm"
+                                      Placeholder="Tìm kiếm user..."
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="Icons.Material.Filled.Search"
+                                      Immediate="true"
+                                      TextChanged="@(e => OnSearchChanged())"
+                                      Style="flex: 1;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="OpenCreateDialog">
+                            Add User
+                        </MudButton>
+                    </div>
+                </div>
+            </ToolBarContent>
+
+
+            <HeaderContent>
+                <MudTh Style="width: 80px; text-align: center; white-space: nowrap;">User Id</MudTh>
+                <MudTh Style="text-align: center; white-space: nowrap;">Username</MudTh>
+                <MudTh Style="text-align: center; white-space: nowrap;">Role</MudTh>
+                <MudTh Style="width: 120px; text-align: center; white-space: nowrap;">Action</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd Style="text-align: center;">@context.UserId</MudTd>
+                <MudTd Style="text-align: center;">@context.Username</MudTd>
+                <MudTd Style="text-align: center;">@context.Role</MudTd>
+                <MudTd Style="text-align: center;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => OpenEditDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ConfirmDeleteUser(context))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No users found</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText>Loading...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private MudTable<User> table;
+    private IEnumerable<User> allUsers = Enumerable.Empty<User>();
+    private IEnumerable<User> pagedUsers = Enumerable.Empty<User>();
+    private string searchTerm = "";
+    private int rowsPerPage = 10;
+    private Timer? _debounceTimer;
+    private const int DebounceInterval = 600; // ms
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            // Lấy tất cả role
+            var roles = user.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+
+            if (user.IsInRole(UserRoles.User))
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+    }
+
+    private async Task<TableData<User>> LoadServerData(TableState state)
+    {
+        try
+        {
+            var result = await AuthService.GetAllUsersAsync(state.Page, state.PageSize, searchTerm);
+            return new TableData<User> { Items = result.users, TotalItems = result.totalCount };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading users: {ex.Message}");
+            return new TableData<User> { Items = Enumerable.Empty<User>(), TotalItems = 0 };
+        }
+    }
+
+    private void OnSearchChanged()
+    {
+        // Nếu timer đang chạy thì dừng lại
+        _debounceTimer?.Stop();
+        _debounceTimer?.Dispose();
+
+        // Tạo timer mới
+        _debounceTimer = new Timer(DebounceInterval);
+        _debounceTimer.Elapsed += async (_, __) =>
+        {
+            _debounceTimer?.Stop();
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+
+            // Reload data trên UI thread
+            await InvokeAsync(async () =>
+            {
+                Console.WriteLine($"Searching for: {searchTerm}");
+                await table.ReloadServerData();
+            });
+        };
+        _debounceTimer.AutoReset = false;
+        _debounceTimer.Start();
+    }
+
+    private async Task AddUser(User user)
+    {
+        var result = await AuthService.AddUser(user);
+        if (result)
+        {
+            Snackbar.Add($"User '{user.Username}' has been added successfully", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add($"Cannot add user '{user.Username}'. Please try again.", Severity.Error);
+        }
+    }
+
+    private async Task EditUser(User user)
+    {
+        var result = await AuthService.EditUser(user);
+        if (result)
+        {
+            Snackbar.Add($"User '{user.Username}' has been updated successfully.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add($"Cannot update user '{user.Username}'. Please try again.", Severity.Error);
+        }
+    }
+
+    private async Task DeleteUser(User user)
+    {
+        var result = await AuthService.DeleteUser(user.UserId);
+        if (result)
+        {
+            Snackbar.Add($"User '{user.Username}' has been deleted successfully.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add($"Cannot delete user '{user.Username}'. Please try again.", Severity.Error);
+        }
+        await table.ReloadServerData();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        try
+        {
+            var parameters = new DialogParameters();
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var dialog = DialogService.Show<EditUserDialog>("Add User", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var editUser = (User)result.Data;
+                await AddUser(editUser);
+                await table.ReloadServerData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error opening edit dialog: {ex.Message}");
+        }
+    }
+
+    private async Task OpenEditDialog(User user)
+    {
+        try
+        {
+            var parameters = new DialogParameters { { "User", user } };
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var dialog = DialogService.Show<EditUserDialog>("Edit User", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var editUser = (User)result.Data;
+                await EditUser(editUser);
+                await table.ReloadServerData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error opening edit dialog: {ex.Message}");
+        }
+    }
+
+    private async Task ConfirmDeleteUser(User user)
+    {
+        try
+        {
+            var parameters = new DialogParameters
+            {
+                { "ContentText", $"Bạn có chắc chắn muốn xóa user '{user.Username}'?" },
+                { "ButtonText", "Xóa" },
+                { "Color", Color.Error }
+            };
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var dialog = DialogService.Show<ConfirmDialog>("Xác nhận xóa", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result.Cancelled)
+            {
+                await DeleteUser(user);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error confirming delete: {ex.Message}");
+        }
+    }
+}

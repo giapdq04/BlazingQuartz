@@ -29,12 +29,17 @@
                 <MudButton Href="history" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.History)">History</MudButton>
                 <MudButton Href="fileupload" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FileUpload)">File Upload</MudButton>
                 <MudButton Href="logviewer" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.LogViewer)">Log Viewer</MudButton>
+
+                @if (context.User.IsInRole(UserRoles.Admin))
+                {
+                    <MudButton Href="users" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Users)">Users</MudButton>
+                }
                 @* <MudButton Href="foldertree" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FolderTree)">File Upload</MudButton> *@  
                 @* <MudButton Href="triggers" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Triggers)">Triggers</MudButton>  
 
-                    <MudButton Href="calendars" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Calendars)">Calendars</MudButton> *@  
+                    <MudButton Href="calendars" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Calendars)">Calendars</MudButton> *@
                 <MudSpacer />
-                <span style="margin-right: 16px;">Welcome, <b>@context.User.Identity?.Name</b>!</span>
+                <span style="margin-right: 16px;">Welcome, <b>@context.User.Identity?.Name</b></span>
                 @if (context.User.IsInRole(UserRoles.Admin))
                 {
                     <span>You are an administrator 🧑‍💼</span>

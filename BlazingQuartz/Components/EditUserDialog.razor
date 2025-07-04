@@ -1,0 +1,70 @@
+﻿@using BlazeQuartz.Core.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="editUser.Username" Label="Username" Required="true" Class="mt-2" />
+        <MudTextField @bind-Value="editUser.Password" Label="Password" InputType="InputType.Password" Required="true" Class="mt-2" />
+        <MudSelect @bind-Value="editUser.Role" Label="Role" Required="true" Class="mt-2">
+            <MudSelectItem Value="@("ADMIN")">ADMIN</MudSelectItem>
+            <MudSelectItem Value="@("USER")">USER</MudSelectItem>
+        </MudSelect>
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Default" OnClick="OnCancel">Hủy</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public User? user { get; set; }
+
+    private User editUser = new();
+
+    protected override void OnInitialized()
+    {
+        if (user != null)
+        {
+            // Sửa user: copy dữ liệu từ user truyền vào
+            editUser = new User
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                Password = user.Password,
+                Role = user.Role
+            };
+        }
+        else
+        {
+            // Tạo mới user: khởi tạo rỗng
+            editUser = new User();
+        }
+    }
+
+    void OnCancel() => MudDialog.Cancel();
+
+    void OnSave()
+    {
+        if (String.IsNullOrWhiteSpace(editUser.Username))
+        {
+            Snackbar.Add("Username is required", Severity.Error);
+            return;
+        }
+
+        if (String.IsNullOrWhiteSpace(editUser.Password))
+        {
+            Snackbar.Add("Password is required", Severity.Error);
+            return;
+        }
+
+        if (String.IsNullOrWhiteSpace(editUser.Role))
+        {
+            Snackbar.Add("Role is required", Severity.Error);
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(editUser));
+    }
+}

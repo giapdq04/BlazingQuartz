@@ -1,0 +1,25 @@
+﻿@using BlazeQuartz.Core.Models
+@inject ISchedulerService SchSvc
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6">@ContentText</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Default" OnClick="OnCancel">Hủy</MudButton>
+        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="OnDelete">@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string ContentText { get; set; }
+    [Parameter] public string ButtonText { get; set; } = "Xóa";
+    [Parameter] public Color Color { get; set; } = Color.Error;
+
+    void OnCancel() => MudDialog.Cancel();
+    void OnDelete()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}
