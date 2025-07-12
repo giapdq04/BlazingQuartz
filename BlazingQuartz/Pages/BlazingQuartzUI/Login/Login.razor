@@ -10,7 +10,7 @@
 
 <PageTitle>Login</PageTitle>
 
-<MudContainer Class="d-flex justify-center align-center min-vh-100">
+<MudContainer Class="d-flex justify-center align-center" Style="height: 100vh; margin-top:-64px; max-width: 100%;">
     <MudCard Class="p-6 shadow-lg" Style="width: 400px; border-radius: 16px; background-color: #ffffff;">
         <MudCardContent>
             <MudText Typo="Typo.h1" Class="mb-4" Align="Align.Center" Color="Color.Primary"
@@ -67,6 +67,12 @@
     {
         _errorMessage = "";
 
+        if (string.IsNullOrWhiteSpace(_loginModel.Username) || string.IsNullOrWhiteSpace(_loginModel.Password))
+        {
+            _errorMessage = "Please enter your username and password";
+            return;
+        }
+
         var user = await AuthService.Login(_loginModel);
 
         if (user != null)
@@ -76,7 +82,7 @@
         }
         else
         {
-            _errorMessage = "Sai tài khoản hoặc mật khẩu";
+            _errorMessage = "Wrong username or password";
         }
     }
 }

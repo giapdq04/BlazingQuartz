@@ -33,6 +33,7 @@
                 @if (context.User.IsInRole(UserRoles.Admin))
                 {
                     <MudButton Href="users" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Users)">Users</MudButton>
+                    <MudButton Href="groups" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Groups)">Groups</MudButton>
                 }
                 @* <MudButton Href="foldertree" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.FolderTree)">File Upload</MudButton> *@  
                 @* <MudButton Href="triggers" Color="Color.Inherit" Variant="Variant.Text" Class="@GetActiveClass(BasePage.Triggers)">Triggers</MudButton>  

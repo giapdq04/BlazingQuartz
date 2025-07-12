@@ -1,0 +1,60 @@
+﻿@using BlazeQuartz.Core.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="editGroup.GROUP_NAME"
+                      Label="Group Name"
+                      Immediate="true"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Required="true"
+                      RequiredError="Group Name is required!"
+                      Class="mt-2" />
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="OnCancel" Variant="Variant.Filled"
+                   Style="width: 100px;">Cancel</MudButton>
+        <MudButton Style="width: 100px;" Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public UserGroup? group { get; set; }
+
+    private UserGroup editGroup = new();
+
+    protected override void OnInitialized()
+    {
+        if (group != null)
+        {
+            // Sửa user: copy dữ liệu từ user truyền vào
+            editGroup = new UserGroup
+            {
+                ID = group.ID,
+                GROUP_NAME = group.GROUP_NAME,
+            };
+        }
+        else
+        {
+            // Tạo mới user: khởi tạo rỗng
+            editGroup = new UserGroup();
+        }
+    }
+
+    void OnCancel() => MudDialog.Cancel();
+
+    void OnSave()
+    {
+        if (String.IsNullOrWhiteSpace(editGroup.GROUP_NAME))
+        {
+            Snackbar.Add("Group name is required", Severity.Error);
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(editGroup));
+    }
+}

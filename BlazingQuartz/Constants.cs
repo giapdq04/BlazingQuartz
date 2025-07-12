@@ -12,6 +12,7 @@ namespace BlazeQuartz
         FolderTree,
         LogViewer,
         Users,
+        Groups,
         Login,
         None
         
@@ -21,6 +22,12 @@ namespace BlazeQuartz
     {
         Job,
         Trigger
+    }
+
+    public enum ShowMemberDialogTab
+    {
+        Board,
+        Add
     }
 }
 

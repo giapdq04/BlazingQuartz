@@ -1,0 +1,215 @@
+﻿@using BlazeQuartz.Core.Models
+@using MudBlazor
+@inject AuthService AuthService
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-2">@title</MudText>
+        @if (SelectedTab == ShowMemberDialogTab.Board)
+        {
+            <MudTable T="User"
+                      Items="pagedUsers"
+                      Dense="true"
+                      Hover="true"
+                      Bordered="true"
+                      RowsPerPage="10"
+                      RowsPerPageOptions="new int[] { 5, 10, 20, 50 }"
+                      @ref="table1"
+                      ServerData="LoadServerData">
+
+                <HeaderContent>
+                    <MudTh Style="text-align: center;">User Id</MudTh>
+                    <MudTh Style="text-align: center;">Username</MudTh>
+                    <MudTh Style="text-align: center;">Role</MudTh>
+                    <MudTh Style="text-align: center;">Action</MudTh>
+
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd Style="text-align: center;">@context.UserId</MudTd>
+                    <MudTd Style="text-align: center;">@context.Username</MudTd>
+                    <MudTd Style="text-align: center;">@context.Role</MudTd>
+                    <MudTd Style="text-align: center;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error" OnClick="()=>RemoveUserFromGroup(context)" />
+                    </MudTd>
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <MudText>No users found</MudText>
+                </NoRecordsContent>
+
+                <LoadingContent>
+                    <MudText>Loading...</MudText>
+                </LoadingContent>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        }
+        else
+        {
+            <MudTable T="User"
+                      Items="pagedUsers"
+                      Dense="true"
+                      Hover="true"
+                      Bordered="true"
+                      RowsPerPage="10"
+                      RowsPerPageOptions="new int[] { 5, 10, 20, 50 }"
+                      @ref="table2"
+                      ServerData="LoadUserNotInGroup">
+
+                <HeaderContent>
+                    <MudTh Style="text-align: center;">User Id</MudTh>
+                    <MudTh Style="text-align: center;">Username</MudTh>
+                    <MudTh Style="text-align: center;">Role</MudTh>
+                    <MudTh Style="text-align: center;">Action</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd Style="text-align: center;">@context.UserId</MudTd>
+                    <MudTd Style="text-align: center;">@context.Username</MudTd>
+                    <MudTd Style="text-align: center;">@context.Role</MudTd>
+                    <MudTd Style="text-align: center;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       Color="Color.Primary" OnClick="()=>AddNewMember(context)" />
+                    </MudTd>
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <MudText>No users found</MudText>
+                </NoRecordsContent>
+
+                <LoadingContent>
+                    <MudText>Loading...</MudText>
+                </LoadingContent>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        }
+
+
+    </DialogContent>
+
+    <DialogActions>
+        <div class="d-flex justify-end mt-2" style="gap: 8px;">
+            @if (SelectedTab == ShowMemberDialogTab.Board)
+            {
+                <MudButton Color="Color.Secondary"
+                           Variant="Variant.Filled"
+                           OnClick="OnAddMember">Add Member</MudButton>
+            }
+            else
+            {
+                <MudButton Color="Color.Secondary"
+                           Variant="Variant.Filled"
+                           OnClick="() => SelectedTab = ShowMemberDialogTab.Board">View Members</MudButton>
+            }
+            <MudButton OnClick="OnCancel" Variant="Variant.Filled"
+                       Style="width: 100px;">Exit</MudButton>
+        </div>
+    </DialogActions>
+
+</MudDialog>
+
+
+@code {
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public UserGroup Group { get; set; }
+    private ShowMemberDialogTab SelectedTab { get; set; } = ShowMemberDialogTab.Board;
+
+    private IEnumerable<User> pagedUsers = Enumerable.Empty<User>();
+    private MudTable<User> table1;
+    private MudTable<User> table2;
+    private string searchTerm = "";
+    private string title = "";
+
+
+    protected override void OnInitialized()
+    {
+        title = Group.GROUP_NAME + " members";
+    }
+
+    private async Task AddNewMember(User user)
+    {
+        try
+        {
+            var result = await AuthService.AddUserToGroup(user.UserId, Group.ID);
+            if (result)
+            {
+                Snackbar.Add($"User {user.Username} added to group successfully", Severity.Success);
+                await table2.ReloadServerData();
+            }
+            else
+            {
+                Snackbar.Add($"Failed to add user {user.Username} to group", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading groups: {ex.Message}");
+        }
+    }
+
+    private async Task RemoveUserFromGroup(User user)
+    {
+        try
+        {
+            var result = await AuthService.DeleteUserFromGroup(user.UserId, Group.ID);
+            if (result)
+            {
+                Snackbar.Add($"User {user.Username} removed to group successfully", Severity.Success);
+                await table1.ReloadServerData();
+            }
+            else
+            {
+                Snackbar.Add($"Failed to remove user {user.Username} to group", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading groups: {ex.Message}");
+        }
+    }
+
+    private async Task<TableData<User>> LoadServerData(TableState state)
+    {
+        try
+        {
+            var result = await AuthService.GetUsersByGroupId(state.Page, state.PageSize, searchTerm, Group.ID);
+            return new TableData<User> { Items = result.users, TotalItems = result.totalCount };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading groups: {ex.Message}");
+            return new TableData<User> { Items = Enumerable.Empty<User>(), TotalItems = 0 };
+        }
+    }
+
+    private async Task<TableData<User>> LoadUserNotInGroup(TableState state)
+    {
+        try
+        {
+            var result = await AuthService.GetUsersNotInGroup(state.Page, state.PageSize, searchTerm, Group.ID);
+            return new TableData<User> { Items = result.users, TotalItems = result.totalCount };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading groups: {ex.Message}");
+            return new TableData<User> { Items = Enumerable.Empty<User>(), TotalItems = 0 };
+        }
+    }
+
+    void OnCancel() => MudDialog.Cancel();
+
+    void OnAddMember()
+    {
+        SelectedTab = ShowMemberDialogTab.Add;
+        title = "Add New Member to " + Group.GROUP_NAME;
+    }
+}

@@ -3,17 +3,42 @@
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="editUser.Username" Label="Username" Required="true" Class="mt-2" />
-        <MudTextField @bind-Value="editUser.Password" Label="Password" InputType="InputType.Password" Required="true" Class="mt-2" />
-        <MudSelect @bind-Value="editUser.Role" Label="Role" Required="true" Class="mt-2">
+        <MudTextField @bind-Value="editUser.Username"
+                      Label="Username"
+                      Immediate="true"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Required="true"
+                      Class="mt-2" />
+        <MudTextField @bind-Value="editUser.Password"
+                      Label="Password"
+                      InputType="InputType.Password"
+                      Immediate="true"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Required="true"
+                      Class="mt-2" />
+        <MudSelect Variant="Variant.Outlined"
+                   Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter"
+                   @bind-Value="editUser.Role" Label="Role" Required="true" Class="mt-2">
             <MudSelectItem Value="@("ADMIN")">ADMIN</MudSelectItem>
             <MudSelectItem Value="@("USER")">USER</MudSelectItem>
         </MudSelect>
 
+        <MudSelect Variant="Variant.Outlined"
+                   Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter"
+                   @bind-Value="editUser.GROUP_NAME" Label="Group" Required="true" Class="mt-2">
+            <MudSelectItem Value="@("IT")">IT</MudSelectItem>
+            <MudSelectItem Value="@("ORDER")">ORDER</MudSelectItem>
+        </MudSelect>
+
     </DialogContent>
     <DialogActions>
-        <MudButton Color="Color.Default" OnClick="OnCancel">Hủy</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Lưu</MudButton>
+        <MudButton OnClick="OnCancel" Variant="Variant.Filled"
+                   Style="width: 100px;">Cancel</MudButton>
+        <MudButton Style="width: 100px;" Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Lưu</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -34,7 +59,8 @@
                 UserId = user.UserId,
                 Username = user.Username,
                 Password = user.Password,
-                Role = user.Role
+                Role = user.Role,
+                GROUP_NAME = user.GROUP_NAME
             };
         }
         else

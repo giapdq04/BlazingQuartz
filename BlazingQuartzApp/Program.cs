@@ -47,6 +47,8 @@ builder.Services.AddQuartzHostedService(
 
 // Add services to the container.
 builder.Services.AddSingleton<AuthService>();
+builder.Services.AddSingleton<JobAssignmentService>();
+builder.Services.AddSingleton<UserGroupService>();
 builder.Services.AddSingleton<LogService>();
 
 builder.Services.AddRazorPages();

@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using MudBlazor;
 using Quartz;
 using System.Collections.ObjectModel;
+using System.Security.Claims;
 
 namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 {
@@ -26,6 +27,8 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
         [Inject] private ISnackbar Snackbar { get; set; } = null!;
         [Inject] AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
 
+        [CascadingParameter] private Task<AuthenticationState> authStateTask { get; set; }
+
         private ObservableCollection<ScheduleModel> ScheduledJobs { get; set; } = new();
         private string? SearchJobKeyword;
         private MudDataGrid<ScheduleModel>? _scheduleDataGrid;
@@ -34,6 +37,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         private ScheduleJobFilter _filter = new();
         private ScheduleJobFilter _origFilter = new();
+        [Inject] private JobAssignmentService jas { get; set; } = null!;
 
         internal bool IsEditActionDisabled(ScheduleModel model) => (model.JobStatus == JobStatus.NoSchedule ||
             model.JobStatus == JobStatus.Error ||
@@ -295,11 +299,49 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
         {
             ScheduledJobs.Clear();
 
+            // Lấy danh sách tất cả jobs dựa trên filter hiện tại
             var jobs = SchedulerSvc.GetAllJobsAsync(_filter);
-            await foreach (var job in jobs)
+
+            // Lấy thông tin người dùng hiện tại
+            var authState = await authStateTask;
+            var user = authState.User;
+
+            // Nếu người dùng không có quyền xem tất cả job (ví dụ không phải admin)
+            if (!user.IsInRole(UserRoles.Admin))
             {
-                ScheduledJobs.Add(job);
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                // Lấy danh sách job assignments của người dùng
+                var jobAssignments = await jas.GetAllJobAssigments(userId);
+
+                if (jobAssignments != null)
+                {
+                    // Tạo một bộ lọc nhanh cho job assignments
+                    var assignmentFilter = new HashSet<(string JobName, string TriggerName)>(
+                        jobAssignments.Select(a => (a.JOB_NAME, a.TRIGGER_NAME))
+                    );
+
+                    // Chỉ thêm job có trong danh sách assignments
+                    await foreach (var job in jobs)
+                    {
+                        if (assignmentFilter.Contains((job.JobName, job.TriggerName)) ||
+                            // Nếu job không có trigger name, kiểm tra chỉ job name
+                            (job.TriggerName == null &&
+                             assignmentFilter.Any(a => a.JobName == job.JobName)))
+                        {
+                            ScheduledJobs.Add(job);
+                        }
+                    }
+                }
             }
+            else
+            {
+                // Nếu là admin, hiển thị tất cả job
+                await foreach (var job in jobs)
+                {
+                    ScheduledJobs.Add(job);
+                }
+            }
+
             if (ScheduledJobs.Any())
                 _scheduleDataGrid?.ExpandAllGroups();
 

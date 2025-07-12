@@ -12,6 +12,7 @@ namespace BlazeQuartz.Core.Models
         /// Flag indicate whether Job should stay in scheduler even there are no more triggers assgined to it.
         /// </summary>
         public bool IsDurable { get; set; }
+        public int UserId { get; set; }
     }
 }
 
