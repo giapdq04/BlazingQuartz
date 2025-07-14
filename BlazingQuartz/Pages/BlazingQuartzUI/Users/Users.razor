@@ -2,7 +2,7 @@
 @attribute [Authorize]
 @using BlazeQuartz.Components
 @using BlazeQuartz.Core.Models
-@inject BlazeQuartz.Core.Services.AuthService AuthService
+@inject BlazeQuartz.Core.Services.UserService AuthService
 @using System.Timers
 @inject MudBlazor.IDialogService DialogService
 @inject NavigationManager Navigation
@@ -38,7 +38,7 @@
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Add"
                                    OnClick="OpenCreateDialog">
-                            Add User
+                            Create User
                         </MudButton>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading users: {ex.Message}");
+            Snackbar.Add($"Error loading users: {ex.Message}", Severity.Error);
             return new TableData<User> { Items = Enumerable.Empty<User>(), TotalItems = 0 };
         }
     }
@@ -143,14 +143,20 @@
 
     private async Task AddUser(User user)
     {
-        var result = await AuthService.AddUser(user);
-        if (result)
+        try
         {
-            Snackbar.Add($"User '{user.Username}' has been added successfully", Severity.Success);
-        }
-        else
+            var result = await AuthService.AddUser(user);
+            if (result)
+            {
+                Snackbar.Add($"User '{user.Username}' has been added successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot add user '{user.Username}'. Please try again.", Severity.Error);
+            }
+        }catch(Exception ex)
         {
-            Snackbar.Add($"Cannot add user '{user.Username}'. Please try again.", Severity.Error);
+            Snackbar.Add($"Error adding user: {ex.Message}", Severity.Error);
         }
     }
 
@@ -187,7 +193,7 @@
         {
             var parameters = new DialogParameters();
             var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-            var dialog = DialogService.Show<EditUserDialog>("Add User", parameters, options);
+            var dialog = DialogService.Show<EditUserDialog>("Create User", parameters, options);
             var result = await dialog.Result;
             if (!result.Cancelled)
             {

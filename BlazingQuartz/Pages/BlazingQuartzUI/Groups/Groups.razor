@@ -151,7 +151,7 @@
         {
             var parameters = new DialogParameters();
             var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-            var dialog = DialogService.Show<EditGroupDialog>("Add Group", parameters, options);
+            var dialog = DialogService.Show<EditGroupDialog>("Create Group", parameters, options);
             var result = await dialog.Result;
             if (!result.Cancelled)
             {

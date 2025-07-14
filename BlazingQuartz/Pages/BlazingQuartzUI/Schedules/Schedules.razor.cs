@@ -26,6 +26,8 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
         [Inject] private ILogger<Schedules> _logger { get; set; } = null!;
         [Inject] private ISnackbar Snackbar { get; set; } = null!;
         [Inject] AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
+        [Inject] TaskAssignmentService TaskAssignmentService { get; set; } = null!;
+        private bool isAdmin = true;
 
         [CascadingParameter] private Task<AuthenticationState> authStateTask { get; set; }
 
@@ -37,7 +39,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         private ScheduleJobFilter _filter = new();
         private ScheduleJobFilter _origFilter = new();
-        [Inject] private JobAssignmentService jas { get; set; } = null!;
+        [Inject] private TaskAssignmentService jas { get; set; } = null!;
 
         internal bool IsEditActionDisabled(ScheduleModel model) => (model.JobStatus == JobStatus.NoSchedule ||
             model.JobStatus == JobStatus.Error ||
@@ -57,15 +59,15 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         internal bool IsAddTriggerActionDisabled(ScheduleModel model) => model.JobStatus == JobStatus.NoSchedule ||
             model.JobStatus == JobStatus.Error ||
-            model.JobGroup == Constants.SYSTEM_GROUP;
+            model.JobGroup == Constants.SYSTEM_GROUP || isAdmin;
 
         internal bool IsCopyActionDisabled(ScheduleModel model) => (model.JobStatus == JobStatus.NoSchedule ||
             model.JobStatus == JobStatus.Error ||
-            model.JobGroup == Constants.SYSTEM_GROUP);
+            model.JobGroup == Constants.SYSTEM_GROUP || isAdmin);
 
         internal bool IsHistoryActionDisabled(ScheduleModel model) => model.JobStatus == JobStatus.NoSchedule;
 
-        internal bool IsDeleteActionDisabled(ScheduleModel model) => model.JobStatus == JobStatus.Running;
+        internal bool IsDeleteActionDisabled(ScheduleModel model) => model.JobStatus == JobStatus.Running || isAdmin;
 
         // private TableGroupDefinition<ScheduleModel> _groupDefinition = new()
         // {
@@ -84,6 +86,13 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
         {
             RegisterEventListeners();
             await RefreshJobs();
+            await CheckAdminAsync();
+        }
+
+        private async Task CheckAdminAsync()
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            isAdmin = !authState.User.IsInRole(UserRoles.Admin);
         }
 
         private void UnRegisterEventListeners()
@@ -311,7 +320,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 // Lấy danh sách job assignments của người dùng
-                var jobAssignments = await jas.GetAllJobAssigments(userId);
+                var jobAssignments = await jas.GetAllTaskAssigments(userId);
 
                 if (jobAssignments != null)
                 {
@@ -392,15 +401,6 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         private async Task OnNewSchedule()
         {
-            // Kiểm tra role
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-
-            if (!authState.User.IsInRole(UserRoles.Admin))
-            {
-                Snackbar.Add("Only administrators can create new schedules", Severity.Warning);
-                return;
-            }
-
             var options = new DialogOptions
             {
                 CloseOnEscapeKey = true,
@@ -459,6 +459,8 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
                 }
             }
 
+            var task = await TaskAssignmentService.GetTaskByJobNameAndTriggerName(currentJobDetail.Name, currentTriggerModel.Name);
+
             var options = new DialogOptions
             {
                 CloseOnEscapeKey = true,
@@ -468,7 +470,8 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
             var parameters = new DialogParameters
             {
                 ["JobDetail"] = currentJobDetail,
-                ["TriggerDetail"] = currentTriggerModel ?? new()
+                ["TriggerDetail"] = currentTriggerModel ?? new(),
+                ["TaskAssignment"] = task
             };
             var dlg = DialogSvc.Show<ScheduleDialog>("Edit Schedule Job", parameters, options);
             var result = await dlg.Result;
@@ -515,32 +518,34 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
 
         private async Task OnDeleteScheduleJob(ScheduleModel model)
         {
-            if (model.JobStatus == JobStatus.NoSchedule)
+            try
             {
-                ScheduledJobs.Remove(model);
-            }
-            else
-            {
-                // confirm delete
-                bool? yes = await DialogSvc.ShowMessageBox(
-                    "Confirm Delete",
-                    $"Do you want to delete this schedule?",
-                    yesText: "Yes", cancelText: "No");
-                if (yes == null || !yes.Value)
+                if (model.JobStatus == JobStatus.NoSchedule)
                 {
-                    return;
-                }
-
-                var success = await SchedulerSvc.DeleteSchedule(model);
-
-                if (!success)
-                {
-                    Snackbar.Add($"Failed to delete schedule '{model.JobName}'", Severity.Error);
+                    ScheduledJobs.Remove(model);
                 }
                 else
                 {
+                    // confirm delete
+                    bool? yes = await DialogSvc.ShowMessageBox(
+                        "Confirm Delete",
+                        $"Do you want to delete this schedule?",
+                        yesText: "Yes", cancelText: "No");
+                    if (yes == null || !yes.Value)
+                    {
+                        return;
+                    }
+
+                    await SchedulerSvc.DeleteSchedule(model);
+
+                    await TaskAssignmentService.DeleteTask(model.JobName, model.TriggerName);
+
                     Snackbar.Add("Deleted schedule", Severity.Info);
                 }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete schedule '{model.JobName}'. Error: {ex.Message}", Severity.Error);
             }
         }
         private async Task OnDuplicateScheduleJob(ScheduleModel model)
@@ -691,6 +696,7 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Schedules
                 }
 
                 ScheduledJobs.Remove(model);
+                TaskAssignmentService.DeleteTask(model.JobName, model.TriggerName);
                 return SchedulerSvc.DeleteSchedule(model);
             });
             var results = await Task.WhenAll(deleteTasks);

@@ -1,21 +1,74 @@
 ﻿@using BlazeQuartz.Core.Models
 @inject ISchedulerService SchSvc
+@inject UserService UserService
+@inject UserGroupService UserGroupService
+@inject TaskAssignmentService TaskAssignmentService
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
 
 <MudDialog>
     <DialogContent>
         <MudButtonGroup OverrideStyles="false" Class="pb-4">
             <MudButton Color="Color.Default" Size="Size.Large" DisableElevation="true"
-                    Variant="@(SelectedTab == ScheduleDialogTab.Job ? Variant.Filled : Variant.Text)"
-                    OnClick="() => OnSelectedTabChanged(ScheduleDialogTab.Job)">Job Details</MudButton>
+                       Variant="@(SelectedTab == ScheduleDialogTab.Job ? Variant.Filled : Variant.Text)"
+                       OnClick="() => OnSelectedTabChanged(ScheduleDialogTab.Job)">Job Details</MudButton>
             <MudButton Color="Color.Default" Size="Size.Large" DisableElevation="true"
-                    Variant="@(SelectedTab == ScheduleDialogTab.Trigger ? Variant.Filled : Variant.Text)"
-                    OnClick="() => OnSelectedTabChanged(ScheduleDialogTab.Trigger)">Trigger Details</MudButton>
+                       Variant="@(SelectedTab == ScheduleDialogTab.Trigger ? Variant.Filled : Variant.Text)"
+                       OnClick="() => OnSelectedTabChanged(ScheduleDialogTab.Trigger)">Trigger Details</MudButton>
         </MudButtonGroup>
+
+        <MudText>Assign to</MudText>
+
+        <MudRadioGroup T="string"
+                       SelectedOptionChanged="OnAssignTypeChanged"
+                       SelectedOption="_assignType"
+                       Row="true">
+            <MudRadio Option="@("User")">User</MudRadio>
+            <MudRadio Option="@("Group")">Group</MudRadio>
+        </MudRadioGroup>
+
+
+        @if (_assignType == "User")
+        {
+            <MudSelect T="int"
+                       @bind-Value="_selectedUserId"
+                       Label="Select User"
+                       Required="true"
+                       RequiredError="User is required"
+                       Margin="Margin.Dense"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Variant="Variant.Outlined">
+                <MudSelectItem Value="0">Select ...</MudSelectItem>
+                @foreach (var user in users)
+                {
+                    <MudSelectItem Value="@user.UserId">@user.UserId - @user.Username</MudSelectItem>
+                }
+            </MudSelect>
+        }
+        else if (_assignType == "Group")
+        {
+            <MudSelect T="int"
+                       @bind-Value="_selectedGroupId"
+                       Label="Select Group"
+                       Required="true"
+                       RequiredError="Group is required"
+                       Margin="Margin.Dense"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Variant="Variant.Outlined">
+                <MudSelectItem Value="0">Select ...</MudSelectItem>
+                @foreach (var group in groups)
+                {
+                    <MudSelectItem Value="@group.ID">@group.ID - @group.GROUP_NAME</MudSelectItem>
+                }
+            </MudSelect>
+        }
+
 
         @if (SelectedTab == ScheduleDialogTab.Job)
         {
             <BlazingJob @ref="_jobPanel" JobDetail="JobDetail" @bind-IsValid="_jobDetailIsValid"
-                        IsReadOnly="IsReadOnlyJobDetail"/>
+                        IsReadOnly="IsReadOnlyJobDetail" />
         }
         else
         {
@@ -25,30 +78,31 @@
     <DialogActions>
         <div class="d-flex justify-space-between flex-grow-1 pa-3">
             <MudButton OnClick="OnCancel" Variant="Variant.Filled"
-                Style="width: 100px;">Cancel</MudButton>
+                       Style="width: 100px;">Cancel</MudButton>
             <div class="d-flex gap-4">
-                <MudButton @ref="_backBtn" 
-                    Style="width: 100px;"
-                    Disabled="@(SelectedTab == ScheduleDialogTab.Job)"
-                    Color="Color.Secondary" 
-                    StartIcon="@Icons.Material.Filled.NavigateBefore"
-                    Variant="Variant.Filled"
-                    OnClick="OnBack">Back</MudButton>
-                <MudButton Color="Color.Primary" 
-                    Style="width: 100px;"
-                    OnClick="OnSubmit"
-                    EndIcon="@_nextIcon"
-                    Variant="Variant.Filled">@_nextText</MudButton>
+                <MudButton @ref="_backBtn"
+                           Style="width: 100px;"
+                           Disabled="@(SelectedTab == ScheduleDialogTab.Job)"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Filled.NavigateBefore"
+                           Variant="Variant.Filled"
+                           OnClick="OnBack">Back</MudButton>
+                <MudButton Color="Color.Primary"
+                           Style="width: 100px;"
+                           OnClick="OnSubmit"
+                           EndIcon="@_nextIcon"
+                           Variant="Variant.Filled">@_nextText</MudButton>
             </div>
         </div>
-        
-        
+
+
     </DialogActions>
 </MudDialog>
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
     [Parameter] public JobDetailModel JobDetail { get; set; } = new();
     [Parameter] public TriggerDetailModel TriggerDetail { get; set; } = new();
+    [Parameter] public TaskAssignment TaskAssignment { get; set; } = null!;
     [Parameter] public bool IsReadOnlyJobDetail { get; set; } = false;
     [Parameter] public ScheduleDialogTab SelectedTab { get; set; } = ScheduleDialogTab.Job;
 
@@ -58,20 +112,62 @@
     private MudButton _backBtn = null!;
     private string _nextText = "Next";
     private string? _nextIcon = Icons.Material.Filled.NavigateNext;
+    private string _assignType = "User";
 
     private BlazingJob _jobPanel = null!;
     private BlazingTrigger _triggerPanel = null!;
+    private List<User> users = new();
+    private List<UserGroup> groups = new();
+    private int _selectedUserId;
+    private int _selectedGroupId;
+    private bool isAdmin;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Admin");
+
         if (SelectedTab == ScheduleDialogTab.Trigger)
         {
             _jobDetailIsValid = true;
             _nextText = "Save";
             _nextIcon = null;
         }
+
+        if (TaskAssignment != null)
+        {
+            _assignType = TaskAssignment.USER_ID != 0 ? "User" : "Group";
+        }
+
+        if (_assignType == "User")
+        {
+            users = (await UserService.GetAllUsers()).ToList();
+            _selectedUserId = TaskAssignment?.USER_ID ?? 0;
+        }
+        else if (_assignType == "Group")
+        {
+            groups = (await UserGroupService.GetAllGroups()).ToList();
+            _selectedGroupId = TaskAssignment?.GROUP_ID ?? 0;
+        }
     }
 
+    private async Task OnAssignTypeChanged(string value)
+    {
+        Console.WriteLine($"Assign type changed to: {value}");
+        _assignType = value;
+
+        if (_assignType == "User")
+        {
+            users = (await UserService.GetAllUsers()).ToList();
+            _selectedGroupId = 0;
+        }
+        else if (_assignType == "Group")
+        {
+            groups = (await UserGroupService.GetAllGroups()).ToList();
+            _selectedUserId = 0;
+        }
+    }
     private async Task OnSelectedTabChanged(ScheduleDialogTab tab)
     {
         if (SelectedTab == tab)
@@ -116,20 +212,57 @@
 
     async Task OnSubmit()
     {
-        if (SelectedTab == ScheduleDialogTab.Job)
+        try
         {
-            await OnSelectedTabChanged(ScheduleDialogTab.Trigger);
-            return;
+            if (SelectedTab == ScheduleDialogTab.Job)
+            {
+                await OnSelectedTabChanged(ScheduleDialogTab.Trigger);
+                return;
+            }
+
+            // Kiểm tra quyền admin trước khi thực hiện các thao tác
+            if (!isAdmin)
+            {
+                Snackbar.Add("You don't have permission to perform this action.", Severity.Error);
+                return;
+            }
+
+            await _triggerPanel.Validate();
+
+            if (!_jobDetailIsValid || !_triggerDetailIsValid)
+            {
+                return;
+            }
+
+            if (_selectedUserId == 0 && _selectedGroupId == 0)
+            {
+                throw new Exception("Please select a user or group to assign the task.");
+            }
+
+            var taskAssignment = new TaskAssignment
+            {
+                JOB_NAME = JobDetail.Name,
+                TRIGGER_NAME = TriggerDetail.Name,
+                USER_ID = _selectedUserId,
+                GROUP_ID = _selectedGroupId
+            };
+
+            // Nếu = null thì là đang thêm, != null là đang sửa
+            if (TaskAssignment == null)
+            {
+                await TaskAssignmentService.AddTask(taskAssignment);
+            }
+            else
+            {
+                await TaskAssignmentService.UpdateTask(TaskAssignment.JOB_NAME, TaskAssignment.TRIGGER_NAME, taskAssignment);
+            }
+
+            MudDialog.Close(DialogResult.Ok((JobDetail, TriggerDetail)));
         }
-
-        await _triggerPanel.Validate();
-
-        if (!_jobDetailIsValid || !_triggerDetailIsValid)
+        catch (Exception ex)
         {
-            return;
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
-
-        MudDialog.Close(DialogResult.Ok((JobDetail, TriggerDetail)));
     }
 
     void OnCancel() => MudDialog.Cancel();

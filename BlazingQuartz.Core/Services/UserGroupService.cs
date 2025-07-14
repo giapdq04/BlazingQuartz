@@ -50,6 +50,25 @@ namespace BlazeQuartz.Core.Services
             }
         }
 
+        public async Task<IEnumerable<UserGroup>> GetAllGroups()
+        {
+            try
+            {
+                _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
+                using var connection = new SqliteConnection(_connectionString);
+
+                string query = "SELECT * FROM USER_GROUPS";
+
+                var roles = await connection.QueryAsync<UserGroup>(query);
+
+                return roles;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error retrieving users", ex);
+            }
+        }
+
         public async Task<bool> AddGroup(UserGroup group)
         {
             try

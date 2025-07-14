@@ -41,16 +41,14 @@
         <MudGrid>
             <MudItem xs="6" Class="mb-2 d-flex gap-3 justify-start align-end">
                 <MudItem xs="6" Class="mb-2 d-flex gap-3 justify-start align-end">
-                    <AuthorizeView Roles=@UserRoles.Admin>
-                        <Authorized>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Add"
-                                       OnClick="OnNewSchedule">New</MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Error"
-                                       StartIcon="@Icons.Material.Filled.Delete"
-                                       OnClick="OnDeleteSelectedScheduleJobs">Delete</MudButton>
-                        </Authorized>
-                    </AuthorizeView>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Disabled="isAdmin"
+                               OnClick="OnNewSchedule">New</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               Disabled="isAdmin"
+                               OnClick="OnDeleteSelectedScheduleJobs">Delete</MudButton>
                 </MudItem>
             </MudItem>
             <MudItem xs="6" Class="mb-2 d-flex justify-end align-center">

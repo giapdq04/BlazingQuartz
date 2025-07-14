@@ -1,7 +1,7 @@
 ﻿
 namespace BlazeQuartz.Core.Models
 {
-    public class JobAssignment
+    public class TaskAssignment
     {
         public int ID { get; set; }
         public string JOB_NAME { get; set; }

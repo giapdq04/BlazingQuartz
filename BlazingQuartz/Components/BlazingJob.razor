@@ -40,15 +40,6 @@
                 }
             </MudSelect>
 
-            <MudSelect T="Type" Label="User Group" Variant="Variant.Outlined"
-                       Value="JobDetail.JobClass"
-                       Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
-                @foreach (var cls in AvailableJobTypes)
-                {
-                    <MudSelectItem T="Type" Value="cls">@cls.FullName</MudSelectItem>
-                }
-            </MudSelect>
-
             <MudTextField @bind-Value="JobDetail.Description"
                           For="@(() => JobDetail.Description)"
                           Lines="2"

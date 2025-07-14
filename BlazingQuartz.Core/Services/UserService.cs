@@ -1,15 +1,17 @@
-﻿using BlazeQuartz.Core.Models;
+﻿using BlazeQuartz.Core.Enums;
+using BlazeQuartz.Core.Models;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 
 namespace BlazeQuartz.Core.Services
 {
-    public class AuthService
+    public class UserService
     {
         private static string _connectionString = "Data Source=BlazingQuartzDb.db";
         private readonly IConfiguration _config;
-        public AuthService(IConfiguration config)
+        public UserService(IConfiguration config)
         {
             _config = config;
         }
@@ -19,10 +21,11 @@ namespace BlazeQuartz.Core.Services
             _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
             using var connection = new SqliteConnection(_connectionString);
 
-            string query = "SELECT * " +
-                            "FROM Users " +
-                            "WHERE USERNAME = @Username " +
-                            "AND PASSWORD = @Password";
+            string query = "SELECT USERS.*, USER_ROLES.ROLE_NAME ROLE " +
+                "from USERS " +
+                "inner join USER_ROLES " +
+                "on USER_ROLES.ROLE_ID = USERS.ROLE_ID " +
+                "WHERE USERNAME = @Username AND PASSWORD = @Password";
             var parameters = new DynamicParameters();
             parameters.Add("Username", u.Username.ToUpper());
             parameters.Add("Password", u.Password);
@@ -39,11 +42,15 @@ namespace BlazeQuartz.Core.Services
                 using var connection = new SqliteConnection(_connectionString);
                 int offset = page * pageSize;
 
-                string query = "SELECT USERID, USERNAME, PASSWORD, ROLE, USER_GROUPS.GROUP_NAME " +
-                                "FROM Users " +
-                                "LEFT JOIN USER_GROUP_MEMBER ON USERS.USERID = USER_GROUP_MEMBER.USER_ID " +
-                                "LEFT JOIN USER_GROUPS ON USER_GROUP_MEMBER.GROUP_ID = USER_GROUPS.ID " +
-                                "WHERE 1=1";
+                string query = "SELECT U.USERID, U.USERNAME, U.PASSWORD, UR.ROLE_NAME AS ROLE, GROUP_CONCAT(G.GROUP_NAME, ', ') AS GROUP_NAME " +
+                    "FROM Users U " +
+                    "LEFT JOIN USER_GROUP_MEMBER GM " +
+                    "ON U.USERID = GM.USER_ID " +
+                    "LEFT JOIN USER_GROUPS G " +
+                    "ON GM.GROUP_ID = G.ID " +
+                    "LEFT JOIN USER_ROLES UR " +
+                    "ON UR.ROLE_ID = U.ROLE_ID " +
+                    "WHERE 1 = 1 ";
                 string countQuery = "SELECT COUNT(*) FROM USERS WHERE 1=1";
                 var parameters = new DynamicParameters();
 
@@ -55,13 +62,34 @@ namespace BlazeQuartz.Core.Services
                     parameters.Add("SearchTerm", $"%{searchTerm.ToUpper()}%");
                 }
 
-                query += " ORDER BY USERID LIMIT @PageSize OFFSET @Offset";
+                query +=
+                    "GROUP BY U.USERID, U.USERNAME, U.PASSWORD, UR.ROLE_NAME" +
+                    " ORDER BY USERID LIMIT @PageSize OFFSET @Offset";
                 parameters.Add("PageSize", pageSize);
                 parameters.Add("Offset", offset);
                 var users = await connection.QueryAsync<User>(query, parameters);
                 int totalCount = await connection.ExecuteScalarAsync<int>(countQuery, parameters);
 
                 return (users, totalCount);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetAllUsers()
+        {
+            try
+            {
+                _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
+                using var connection = new SqliteConnection(_connectionString);
+
+                string query = "SELECT u.USERID,u.USERNAME from USERS u";
+
+                var roles = await connection.QueryAsync<User>(query);
+
+                return roles;
             }
             catch (Exception ex)
             {
@@ -86,30 +114,16 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error adding user", ex);
+                if (ex.Message == "SQLite Error 19: 'UNIQUE constraint failed: USERS.USERNAME'.")
+                {
+                    throw new Exception("This username already exists");
+                }
+                else
+                {
+                    throw new Exception(ex.Message);
+                }
             }
         }
-
-        //private async Task<bool> CheckAdmin()
-        //{
-        //    try
-        //    {
-        //        _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
-        //        using var connection = new SqliteConnection(_connectionString);
-        //        string query = "INSERT INTO USERS (USERNAME, PASSWORD, ROLE) " +
-        //                        "VALUES (@Username, @Password, @Role)";
-        //        var parameters = new DynamicParameters();
-        //        parameters.Add("Username", user.Username.ToUpper());
-        //        parameters.Add("Password", user.Password);
-        //        parameters.Add("Role", user.Role);
-        //        var result = await connection.ExecuteAsync(query, parameters);
-        //        return result > 0;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception("Error adding user", ex);
-        //    }
-        //}
 
         public async Task<bool> AddUserToGroup(int userId, int groupId)
         {

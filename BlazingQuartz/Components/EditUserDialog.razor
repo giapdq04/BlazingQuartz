@@ -1,5 +1,6 @@
 ﻿@using BlazeQuartz.Core.Models
 @using MudBlazor
+@inject UserRoleService UserRoleService
 
 <MudDialog>
     <DialogContent>
@@ -21,24 +22,25 @@
                       Required="true"
                       Class="mt-2" />
         <MudSelect Variant="Variant.Outlined"
-                   Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter"
-                   @bind-Value="editUser.Role" Label="Role" Required="true" Class="mt-2">
-            <MudSelectItem Value="@("ADMIN")">ADMIN</MudSelectItem>
-            <MudSelectItem Value="@("USER")">USER</MudSelectItem>
+                   Margin="Margin.Dense"
+                   AnchorOrigin="Origin.BottomCenter"
+                   T="int"
+                   @bind-Value="editUser.Role_Id"
+                   Label="Role"
+                   Required="true"
+                   Class="mt-2">
+            @foreach (var role in roles)
+            {
+                <MudSelectItem Value="@role.Role_Id">@role.Role_Name</MudSelectItem>
+            }
         </MudSelect>
 
-        <MudSelect Variant="Variant.Outlined"
-                   Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter"
-                   @bind-Value="editUser.GROUP_NAME" Label="Group" Required="true" Class="mt-2">
-            <MudSelectItem Value="@("IT")">IT</MudSelectItem>
-            <MudSelectItem Value="@("ORDER")">ORDER</MudSelectItem>
-        </MudSelect>
 
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="OnCancel" Variant="Variant.Filled"
                    Style="width: 100px;">Cancel</MudButton>
-        <MudButton Style="width: 100px;" Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Lưu</MudButton>
+        <MudButton Style="width: 100px;" Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Save</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -48,9 +50,11 @@
     [Parameter] public User? user { get; set; }
 
     private User editUser = new();
+    private List<Role> roles = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        roles = (await UserRoleService.GetAllRoles()).ToList();
         if (user != null)
         {
             // Sửa user: copy dữ liệu từ user truyền vào
@@ -59,14 +63,13 @@
                 UserId = user.UserId,
                 Username = user.Username,
                 Password = user.Password,
-                Role = user.Role,
-                GROUP_NAME = user.GROUP_NAME
+                Role_Id = user.Role_Id
             };
         }
         else
         {
             // Tạo mới user: khởi tạo rỗng
-            editUser = new User();
+            editUser = new User { Role_Id = roles.Any() ? roles.First().Role_Id : 0 };
         }
     }
 
@@ -86,7 +89,7 @@
             return;
         }
 
-        if (String.IsNullOrWhiteSpace(editUser.Role))
+        if (String.IsNullOrWhiteSpace(editUser.Role_Id.ToString()))
         {
             Snackbar.Add("Role is required", Severity.Error);
             return;

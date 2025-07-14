@@ -46,10 +46,11 @@ builder.Services.AddQuartzHostedService(
 #endregion Configure Quartz3
 
 // Add services to the container.
-builder.Services.AddSingleton<AuthService>();
-builder.Services.AddSingleton<JobAssignmentService>();
+builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<TaskAssignmentService>();
 builder.Services.AddSingleton<UserGroupService>();
 builder.Services.AddSingleton<LogService>();
+builder.Services.AddSingleton<UserRoleService>();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();

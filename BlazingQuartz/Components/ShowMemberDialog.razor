@@ -1,6 +1,6 @@
 ﻿@using BlazeQuartz.Core.Models
 @using MudBlazor
-@inject AuthService AuthService
+@inject UserService AuthService
 
 <MudDialog>
     <DialogContent>
@@ -28,7 +28,7 @@
                 <RowTemplate>
                     <MudTd Style="text-align: center;">@context.UserId</MudTd>
                     <MudTd Style="text-align: center;">@context.Username</MudTd>
-                    <MudTd Style="text-align: center;">@context.Role</MudTd>
+                    <MudTd Style="text-align: center;">@context.Role_Id</MudTd>
                     <MudTd Style="text-align: center;">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error" OnClick="()=>RemoveUserFromGroup(context)" />
@@ -71,7 +71,7 @@
                 <RowTemplate>
                     <MudTd Style="text-align: center;">@context.UserId</MudTd>
                     <MudTd Style="text-align: center;">@context.Username</MudTd>
-                    <MudTd Style="text-align: center;">@context.Role</MudTd>
+                    <MudTd Style="text-align: center;">@context.Role_Id</MudTd>
                     <MudTd Style="text-align: center;">
                         <MudIconButton Icon="@Icons.Material.Filled.Add"
                                        Color="Color.Primary" OnClick="()=>AddNewMember(context)" />
