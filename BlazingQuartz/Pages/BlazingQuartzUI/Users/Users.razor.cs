@@ -127,6 +127,26 @@ namespace BlazeQuartz.Pages.BlazingQuartzUI.Users
             await table.ReloadServerData();
         }
 
+        private async Task OpenRoleManagerDialog()
+        {
+            try
+            {
+                var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+                var dialog = DialogService.Show<RoleDialog>("Role Management", options);
+                var result = await dialog.Result;
+                if (!result.Canceled)
+                {
+                    //var editUser = (User)result.Data;
+                    //await AddUser(editUser);
+                    //await table.ReloadServerData();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error opening edit dialog: {ex.Message}");
+            }
+        }
+
         private async Task OpenCreateDialog()
         {
             try

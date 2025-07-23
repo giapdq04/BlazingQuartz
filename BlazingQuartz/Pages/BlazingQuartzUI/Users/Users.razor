@@ -22,7 +22,7 @@
                 <div style="display: flex; align-items: center; width: 100%;">
                     <MudText Typo="Typo.h4" Style="white-space: nowrap; margin-right: 16px;">User List</MudText>
                     <MudSpacer />
-                    <div style="width: 100%; max-width: 400px; display: flex; gap: 8px;">
+                    <div style="width: 100%; max-width: 500px; display: flex; gap: 8px;">
                         <MudTextField T="string"
                                       @bind-Value="searchTerm"
                                       Placeholder="Search user..."
@@ -31,6 +31,11 @@
                                       Immediate="true"
                                       TextChanged="@(e => OnSearchChanged())"
                                       Style="flex: 1;" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.AdminPanelSettings"
+                                   OnClick="OpenRoleManagerDialog">
+                            Roles
+                        </MudButton>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Add"
                                    OnClick="OpenCreateDialog">
@@ -46,7 +51,7 @@
                 <MudTh Style="text-align: center; white-space: nowrap;">Username</MudTh>
                 <MudTh Style="text-align: center; white-space: nowrap;">Role</MudTh>
                 <MudTh Style="text-align: center; white-space: nowrap;">Group Name</MudTh>
-                <MudTh Style="width: 120px; text-align: center; white-space: nowrap;">Action</MudTh>
+                <MudTh Style="width: 120px; text-align: center; white-space: nowrap;"></MudTh>
             </HeaderContent>
 
             <RowTemplate>

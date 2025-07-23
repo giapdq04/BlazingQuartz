@@ -1,0 +1,183 @@
+﻿@using BlazeQuartz.Core.Models
+<MudDialog>
+    <DialogContent>
+        <MudTable T="Role" Items="roles" Dense="true" @ref="table">
+            <ToolBarContent>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenCreateDialog">
+                    Create User
+                </MudButton>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Role Id</MudTh>
+                <MudTh>Role Name</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Role_Id</MudTd>
+                <MudTd>@context.Role_Name</MudTd>
+                <MudTd Style="display: flex; flex-direction: row; gap: 8px; justify-content: center;">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="() => OpenEditDialog(context)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="() => ConfirmDeleteRole(context)" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+        <!-- Thêm các nút thêm/sửa/xóa role nếu muốn -->
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    private List<Role> roles = new();
+
+    [Inject] public UserRoleService UserRoleService { get; set; } = null!;
+    [Inject] public IDialogService DialogService { get; set; } = null!;
+    [Inject] public ISnackbar Snackbar { get; set; } = null!;
+    private MudTable<Role> table;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        roles = (await UserRoleService.GetAllRoles()).ToList();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        try
+        {
+            // var parameters = new DialogParameters();
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var dialog = DialogService.Show<EditRoleDialog>("Create Role", options);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var editRole = (Role)result.Data;
+                await CreateRole(editRole);
+                await LoadData();
+                await table.ReloadServerData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error opening edit dialog: {ex.Message}");
+        }
+    }
+
+    private async Task OpenEditDialog(Role role)
+    {
+        try
+        {
+            var parameters = new DialogParameters { { "role", role } };
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var dialog = DialogService.Show<EditRoleDialog>("Edit Role", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Cancelled)
+            {
+                var editedRole = (Role)result.Data;
+                await EditRole(editedRole);
+                await LoadData();
+                await table.ReloadServerData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error opening edit dialog: {ex.Message}");
+        }
+    }
+
+    private async Task CreateRole(Role role)
+    {
+        try
+        {
+            var result = await UserRoleService.AddRole(role);
+            if (result)
+            {
+                Snackbar.Add($"Successfully added role '{role.Role_Name}'", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot add role '{role.Role_Name}'. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error adding role: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task EditRole(Role role)
+    {
+        try
+        {
+            var result = await UserRoleService.EditRole(role);
+            if (result)
+            {
+                Snackbar.Add($"Successfully added role '{role.Role_Name}'", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot add role '{role.Role_Name}'. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error editting role: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ConfirmDeleteRole(Role role)
+    {
+        try
+        {
+            var parameters = new DialogParameters
+            {
+                { "ContentText", $"Are you sure you want to delete role '{role.Role_Name}'?" },
+                { "ButtonText", "Xóa" },
+                { "Color", Color.Error }
+            };
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+            var dialog = DialogService.Show<ConfirmDialog>("Confirm Delete", parameters, options);
+            var result = await dialog.Result;
+
+            if (!result.Cancelled)
+            {
+                await DeleteRole(role);
+                await LoadData();
+                await table.ReloadServerData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error confirming delete: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteRole(Role role)
+    {
+        try
+        {
+            var result = await UserRoleService.DeleteRole(role.Role_Id);
+            if (result)
+            {
+                Snackbar.Add($"Role '{role.Role_Name}' has been deleted successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot delete role '{role.Role_Name}'. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting role: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,58 @@
+﻿@using BlazeQuartz.Core.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="editedRole.Role_Name"
+                      Label="Role Name"
+                      Immediate="true"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Required="true"
+                      RequiredError="Role Name is required!"
+                      Class="mt-2" />
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="OnCancel" Variant="Variant.Filled"
+                   Style="width: 100px;">Cancel</MudButton>
+        <MudButton Style="width: 100px;" Color="Color.Primary" Variant="Variant.Filled" OnClick="OnSave">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Role? role { get; set; }
+
+    private Role editedRole = new();
+
+    protected override void OnInitialized()
+    {
+        if (role != null)
+        {
+            editedRole = new Role
+            {
+                Role_Id = role.Role_Id,
+                Role_Name = role.Role_Name
+            };
+        }
+        else
+        {
+            editedRole = new Role();
+        }
+    }
+
+    void OnCancel() => MudDialog.Cancel();
+
+    void OnSave()
+    {
+        if (String.IsNullOrWhiteSpace(editedRole.Role_Name))
+        {
+            Snackbar.Add("Role name is required", Severity.Error);
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(editedRole));
+    }
+}
