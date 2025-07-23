@@ -134,7 +134,10 @@
             // Reload data trên UI thread
             await InvokeAsync(async () =>
             {
-                await table.ReloadServerData();
+                if (table != null)
+                {
+                    await table.ReloadServerData();
+                }
             });
         };
         _debounceTimer.AutoReset = false;
@@ -148,13 +151,14 @@
             var result = await AuthService.AddUser(user);
             if (result)
             {
-                Snackbar.Add($"User '{user.Username}' has been added successfully", Severity.Success);
+                Snackbar.Add($"Successfully added user '{user.Username}'", Severity.Success);
             }
             else
             {
                 Snackbar.Add($"Cannot add user '{user.Username}'. Please try again.", Severity.Error);
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             Snackbar.Add($"Error adding user: {ex.Message}", Severity.Error);
         }
@@ -162,14 +166,21 @@
 
     private async Task EditUser(User user)
     {
-        var result = await AuthService.EditUser(user);
-        if (result)
+        try
         {
-            Snackbar.Add($"User '{user.Username}' has been updated successfully.", Severity.Success);
+            var result = await AuthService.EditUser(user);
+            if (result)
+            {
+                Snackbar.Add($"Successfully updated user '{user.Username}'", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot update user '{user.Username}'. Please try again.", Severity.Error);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Snackbar.Add($"Cannot update user '{user.Username}'. Please try again.", Severity.Error);
+            Snackbar.Add($"Error updating user: {ex.Message}", Severity.Error);
         }
     }
 
@@ -178,7 +189,7 @@
         var result = await AuthService.DeleteUser(user.UserId);
         if (result)
         {
-            Snackbar.Add($"User '{user.Username}' has been deleted successfully.", Severity.Success);
+            Snackbar.Add($"Successfully deleted user '{user.Username}'", Severity.Success);
         }
         else
         {

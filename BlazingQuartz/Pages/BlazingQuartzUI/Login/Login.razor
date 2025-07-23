@@ -65,24 +65,30 @@
 
     private async Task OnLogin()
     {
-        _errorMessage = "";
-
-        if (string.IsNullOrWhiteSpace(_loginModel.Username) || string.IsNullOrWhiteSpace(_loginModel.Password))
+        try
         {
-            _errorMessage = "Please enter your username and password";
-            return;
-        }
+            _errorMessage = "";
 
-        var user = await AuthService.Login(_loginModel);
+            if (string.IsNullOrWhiteSpace(_loginModel.Username) || string.IsNullOrWhiteSpace(_loginModel.Password))
+            {
+                _errorMessage = "Please enter your username and password";
+                return;
+            }
 
-        if (user != null)
+            var user = await AuthService.Login(_loginModel);
+
+            if (user != null)
+            {
+                await authStateProvider.MarkUserAsAuthenticated(user);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                _errorMessage = "Wrong username or password";
+            }
+        }catch(Exception ex)
         {
-            await authStateProvider.MarkUserAsAuthenticated(user);
-            Navigation.NavigateTo("/");
-        }
-        else
-        {
-            _errorMessage = "Wrong username or password";
+            _errorMessage = ex.Message;
         }
     }
 }

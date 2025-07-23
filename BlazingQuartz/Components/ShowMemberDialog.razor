@@ -28,7 +28,7 @@
                 <RowTemplate>
                     <MudTd Style="text-align: center;">@context.UserId</MudTd>
                     <MudTd Style="text-align: center;">@context.Username</MudTd>
-                    <MudTd Style="text-align: center;">@context.Role_Id</MudTd>
+                    <MudTd Style="text-align: center;">@context.Role</MudTd>
                     <MudTd Style="text-align: center;">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error" OnClick="()=>RemoveUserFromGroup(context)" />
@@ -71,7 +71,7 @@
                 <RowTemplate>
                     <MudTd Style="text-align: center;">@context.UserId</MudTd>
                     <MudTd Style="text-align: center;">@context.Username</MudTd>
-                    <MudTd Style="text-align: center;">@context.Role_Id</MudTd>
+                    <MudTd Style="text-align: center;">@context.Role</MudTd>
                     <MudTd Style="text-align: center;">
                         <MudIconButton Icon="@Icons.Material.Filled.Add"
                                        Color="Color.Primary" OnClick="()=>AddNewMember(context)" />
@@ -173,7 +173,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading groups: {ex.Message}");
+            Console.WriteLine($"Error removing user from group: {ex.Message}");
         }
     }
 
@@ -187,6 +187,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading groups: {ex.Message}");
+            Snackbar.Add($"Error loading users in group: {ex.Message}", Severity.Error);
             return new TableData<User> { Items = Enumerable.Empty<User>(), TotalItems = 0 };
         }
     }
@@ -201,6 +202,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading groups: {ex.Message}");
+            Snackbar.Add($"Error loading users not in group: {ex.Message}", Severity.Error);
             return new TableData<User> { Items = Enumerable.Empty<User>(), TotalItems = 0 };
         }
     }

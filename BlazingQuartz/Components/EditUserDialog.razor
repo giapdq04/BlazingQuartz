@@ -29,6 +29,7 @@
                    Label="Role"
                    Required="true"
                    Class="mt-2">
+            <MudSelectItem Value="0">Select Role</MudSelectItem>
             @foreach (var role in roles)
             {
                 <MudSelectItem Value="@role.Role_Id">@role.Role_Name</MudSelectItem>
@@ -54,22 +55,27 @@
 
     protected override async Task OnInitializedAsync()
     {
-        roles = (await UserRoleService.GetAllRoles()).ToList();
-        if (user != null)
+        try
         {
-            // Sửa user: copy dữ liệu từ user truyền vào
-            editUser = new User
+            roles = (await UserRoleService.GetAllRoles()).ToList();
+            if (user != null)
             {
-                UserId = user.UserId,
-                Username = user.Username,
-                Password = user.Password,
-                Role_Id = user.Role_Id
-            };
+                editUser = new User
+                {
+                    UserId = user.UserId,
+                    Username = user.Username,
+                    Password = user.Password,
+                    Role_Id = user.Role_Id
+                };
+            }
+            else
+            {
+                editUser = new User();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            // Tạo mới user: khởi tạo rỗng
-            editUser = new User { Role_Id = roles.Any() ? roles.First().Role_Id : 0 };
+            Snackbar.Add($"Error loading roles: {ex.Message}", Severity.Error);
         }
     }
 
@@ -89,7 +95,7 @@
             return;
         }
 
-        if (String.IsNullOrWhiteSpace(editUser.Role_Id.ToString()))
+        if (editUser.Role_Id == 0)
         {
             Snackbar.Add("Role is required", Severity.Error);
             return;

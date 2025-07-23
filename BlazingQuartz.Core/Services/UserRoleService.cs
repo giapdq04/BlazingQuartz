@@ -31,7 +31,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving users", ex);
+                throw new Exception(ex.Message);
             }
         }
     }

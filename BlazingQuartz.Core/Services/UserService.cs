@@ -18,20 +18,26 @@ namespace BlazeQuartz.Core.Services
 
         public async Task<User> Login(User u)
         {
-            _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
-            using var connection = new SqliteConnection(_connectionString);
+            try
+            {
+                _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
+                using var connection = new SqliteConnection(_connectionString);
 
-            string query = "SELECT USERS.*, USER_ROLES.ROLE_NAME ROLE " +
-                "from USERS " +
-                "inner join USER_ROLES " +
-                "on USER_ROLES.ROLE_ID = USERS.ROLE_ID " +
-                "WHERE USERNAME = @Username AND PASSWORD = @Password";
-            var parameters = new DynamicParameters();
-            parameters.Add("Username", u.Username.ToUpper());
-            parameters.Add("Password", u.Password);
+                string query = "SELECT USERS.*, USER_ROLES.ROLE_NAME ROLE " +
+                    "from USERS " +
+                    "inner join USER_ROLES " +
+                    "on USER_ROLES.ROLE_ID = USERS.ROLE_ID " +
+                    "WHERE USERNAME = @Username AND PASSWORD = @Password";
+                var parameters = new DynamicParameters();
+                parameters.Add("Username", u.Username.ToUpper());
+                parameters.Add("Password", u.Password);
 
-            var user = await connection.QueryFirstOrDefaultAsync<User>(query, parameters);
-            return user;
+                var user = await connection.QueryFirstOrDefaultAsync<User>(query, parameters);
+                return user;
+            }catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         public async Task<(IEnumerable<User> users, int totalCount)> GetAllUsersAsync(int page, int pageSize, string searchTerm)
@@ -42,7 +48,7 @@ namespace BlazeQuartz.Core.Services
                 using var connection = new SqliteConnection(_connectionString);
                 int offset = page * pageSize;
 
-                string query = "SELECT U.USERID, U.USERNAME, U.PASSWORD, UR.ROLE_NAME AS ROLE, GROUP_CONCAT(G.GROUP_NAME, ', ') AS GROUP_NAME " +
+                string query = "SELECT U.USERID, U.USERNAME, U.PASSWORD, U.Role_Id, UR.ROLE_NAME AS ROLE, GROUP_CONCAT(G.GROUP_NAME, ', ') AS GROUP_NAME " +
                     "FROM Users U " +
                     "LEFT JOIN USER_GROUP_MEMBER GM " +
                     "ON U.USERID = GM.USER_ID " +
@@ -63,7 +69,7 @@ namespace BlazeQuartz.Core.Services
                 }
 
                 query +=
-                    "GROUP BY U.USERID, U.USERNAME, U.PASSWORD, UR.ROLE_NAME" +
+                    "GROUP BY U.USERID, U.USERNAME, U.PASSWORD, U.Role_Id, UR.ROLE_NAME" +
                     " ORDER BY USERID LIMIT @PageSize OFFSET @Offset";
                 parameters.Add("PageSize", pageSize);
                 parameters.Add("Offset", offset);
@@ -93,7 +99,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving users", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -103,12 +109,12 @@ namespace BlazeQuartz.Core.Services
             {
                 _connectionString = _config["ConnectionStrings:BlazingQuartzDb"];
                 using var connection = new SqliteConnection(_connectionString);
-                string query = "INSERT INTO USERS (USERNAME, PASSWORD, ROLE) " +
-                                "VALUES (@Username, @Password, @Role)";
+                string query = "INSERT INTO USERS (USERNAME, PASSWORD, ROLE_ID) " +
+                                "VALUES (@Username, @Password, @Role_Id)";
                 var parameters = new DynamicParameters();
                 parameters.Add("Username", user.Username.ToUpper());
                 parameters.Add("Password", user.Password);
-                parameters.Add("Role", user.Role);
+                parameters.Add("Role_Id", user.Role_Id);
                 var result = await connection.ExecuteAsync(query, parameters);
                 return result > 0;
             }
@@ -141,7 +147,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error adding user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -162,7 +168,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error deleting user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -185,7 +191,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error deleting user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -198,19 +204,19 @@ namespace BlazeQuartz.Core.Services
                 string query = "UPDATE USERS " +
                                 "SET USERNAME = @Username, " +
                                 "PASSWORD = @Password, " +
-                                "ROLE = @Role " +
+                                "ROLE_ID = @Role_Id " +
                                 "WHERE USERID = @UserId";
                 var parameters = new DynamicParameters();
                 parameters.Add("Username", user.Username.ToUpper());
                 parameters.Add("Password", user.Password);
-                parameters.Add("Role", user.Role);
+                parameters.Add("Role_Id", user.Role_Id);
                 parameters.Add("UserId", user.UserId);
                 var result = await connection.ExecuteAsync(query, parameters);
                 return result > 0;
             }
             catch (Exception ex)
             {
-                throw new Exception("Error editing user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -222,15 +228,20 @@ namespace BlazeQuartz.Core.Services
                 using var connection = new SqliteConnection(_connectionString);
                 int offset = page * pageSize;
 
-                string query = "select USERID, USERNAME, ROLE " +
-                                "from USERS " +
-                                "inner join USER_GROUP_MEMBER " +
-                                "on USERS.USERID = USER_GROUP_MEMBER.USER_ID " +
-                                "where USER_GROUP_MEMBER.GROUP_ID = @groupId ";
-                string countQuery = "select count(*) from USERS " +
-                                    "inner join USER_GROUP_MEMBER " +
-                                    "on USERS.USERID = USER_GROUP_MEMBER.USER_ID " +
-                                    "where USER_GROUP_MEMBER.GROUP_ID = @groupId;";
+                string query = "select u.USERID, u.USERNAME, ur.ROLE_NAME Role " +
+                                "from USERS u " +
+                                "inner join USER_GROUP_MEMBER ugm " +
+                                "on u.USERID = ugm.USER_ID " +
+                                "INNER JOIN USER_ROLES ur " +
+                                "on ur.ROLE_ID = u.ROLE_ID " +
+                                "where ugm.GROUP_ID = @groupId ";
+                string countQuery = "select count(*) " +
+                                        "from USERS u " +
+                                        "inner join USER_GROUP_MEMBER ugm " +
+                                        "on u.USERID = ugm.USER_ID " +
+                                        "INNER JOIN USER_ROLES ur " +
+                                        "on ur.ROLE_ID = u.ROLE_ID " +
+                                        "where ugm.GROUP_ID = @groupId ";
                 var parameters = new DynamicParameters();
                 parameters.Add("groupId", groupId);
 
@@ -252,7 +263,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving users", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -264,15 +275,19 @@ namespace BlazeQuartz.Core.Services
                 using var connection = new SqliteConnection(_connectionString);
                 int offset = page * pageSize;
 
-                string query = "SELECT USERID, USERNAME, ROLE " +
-                                "FROM USERS u " +
-                                "LEFT JOIN USER_GROUP_MEMBER ugm " +
+                string query = "SELECT USERID,USERNAME ,ur.ROLE_NAME Role " +
+                                "FROM USERS u LEFT " +
+                                "JOIN USER_GROUP_MEMBER ugm " +
                                 "ON u.USERID = ugm.USER_ID AND ugm.GROUP_ID = @groupId " +
+                                "LEFT join USER_ROLES ur " +
+                                "on u.ROLE_ID = ur.ROLE_ID " +
                                 "WHERE ugm.USER_ID IS NULL ";
                 string countQuery = "SELECT count(*) " +
                                     "FROM USERS u " +
                                     "LEFT JOIN USER_GROUP_MEMBER ugm " +
                                     "ON u.USERID = ugm.USER_ID AND ugm.GROUP_ID = @groupId " +
+                                    "LEFT join USER_ROLES ur " +
+                                    "on u.ROLE_ID = ur.ROLE_ID " +
                                     "WHERE ugm.USER_ID IS NULL ";
                 var parameters = new DynamicParameters();
                 parameters.Add("groupId", groupId);
@@ -295,7 +310,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving users", ex);
+                throw new Exception(ex.Message);
             }
         }
     }

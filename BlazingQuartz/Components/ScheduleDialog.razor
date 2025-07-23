@@ -1,4 +1,5 @@
-﻿@using BlazeQuartz.Core.Models
+﻿@using BlazeQuartz.Core.Enums
+@using BlazeQuartz.Core.Models
 @inject ISchedulerService SchSvc
 @inject UserService UserService
 @inject UserGroupService UserGroupService
@@ -124,48 +125,62 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        isAdmin = user.IsInRole("Admin");
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var role = user.FindFirst(c => c.Type == ClaimTypes.Role)?.Value;
+            isAdmin = role == UserRoles.Admin;
 
-        if (SelectedTab == ScheduleDialogTab.Trigger)
-        {
-            _jobDetailIsValid = true;
-            _nextText = "Save";
-            _nextIcon = null;
-        }
+            if (SelectedTab == ScheduleDialogTab.Trigger)
+            {
+                _jobDetailIsValid = true;
+                _nextText = "Save";
+                _nextIcon = null;
+            }
 
-        if (TaskAssignment != null)
-        {
-            _assignType = TaskAssignment.USER_ID != 0 ? "User" : "Group";
-        }
+            if (TaskAssignment != null)
+            {
+                _assignType = TaskAssignment.USER_ID != 0 ? "User" : "Group";
+            }
 
-        if (_assignType == "User")
-        {
-            users = (await UserService.GetAllUsers()).ToList();
-            _selectedUserId = TaskAssignment?.USER_ID ?? 0;
+            if (_assignType == "User")
+            {
+                users = (await UserService.GetAllUsers()).ToList();
+                _selectedUserId = TaskAssignment?.USER_ID ?? 0;
+            }
+            else if (_assignType == "Group")
+            {
+                groups = (await UserGroupService.GetAllGroups()).ToList();
+                _selectedGroupId = TaskAssignment?.GROUP_ID ?? 0;
+            }
         }
-        else if (_assignType == "Group")
+        catch (Exception ex)
         {
-            groups = (await UserGroupService.GetAllGroups()).ToList();
-            _selectedGroupId = TaskAssignment?.GROUP_ID ?? 0;
+            Console.WriteLine($"Error initializing ScheduleDialog: {ex.Message}");
+            Snackbar.Add($"Error initializing dialog: {ex.Message}", Severity.Error);
         }
     }
 
     private async Task OnAssignTypeChanged(string value)
     {
-        Console.WriteLine($"Assign type changed to: {value}");
-        _assignType = value;
+        try
+        {
+            _assignType = value;
 
-        if (_assignType == "User")
+            if (_assignType == "User")
+            {
+                users = (await UserService.GetAllUsers()).ToList();
+                _selectedGroupId = 0;
+            }
+            else if (_assignType == "Group")
+            {
+                groups = (await UserGroupService.GetAllGroups()).ToList();
+                _selectedUserId = 0;
+            }
+        } catch (Exception ex)
         {
-            users = (await UserService.GetAllUsers()).ToList();
-            _selectedGroupId = 0;
-        }
-        else if (_assignType == "Group")
-        {
-            groups = (await UserGroupService.GetAllGroups()).ToList();
-            _selectedUserId = 0;
+            Snackbar.Add($"Error changing assignment type: {ex.Message}", Severity.Error);
         }
     }
     private async Task OnSelectedTabChanged(ScheduleDialogTab tab)

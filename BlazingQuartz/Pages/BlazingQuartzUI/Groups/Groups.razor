@@ -168,14 +168,21 @@
 
     private async Task AddGroup(UserGroup group)
     {
-        var result = await UserGroupService.AddGroup(group);
-        if (result)
+        try
         {
-            Snackbar.Add($"Group '{group.GROUP_NAME}' has been added successfully", Severity.Success);
+            var result = await UserGroupService.AddGroup(group);
+            if (result)
+            {
+                Snackbar.Add($"Group '{group.GROUP_NAME}' has been added successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot add group '{group.GROUP_NAME}'. Please try again.", Severity.Error);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Snackbar.Add($"Cannot add group '{group.GROUP_NAME}'. Please try again.", Severity.Error);
+            Snackbar.Add($"Error adding group: {ex.Message}", Severity.Error);
         }
     }
 
@@ -202,14 +209,21 @@
 
     private async Task EditGroup(UserGroup group)
     {
-        var result = await UserGroupService.EditGroup(group);
-        if (result)
+        try
         {
-            Snackbar.Add($"Group '{group.GROUP_NAME}' has been updated successfully", Severity.Success);
+            var result = await UserGroupService.EditGroup(group);
+            if (result)
+            {
+                Snackbar.Add($"Group '{group.GROUP_NAME}' has been updated successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot update group '{group.GROUP_NAME}'. Please try again.", Severity.Error);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Snackbar.Add($"Cannot update group '{group.GROUP_NAME}'. Please try again.", Severity.Error);
+            Snackbar.Add($"Error updating group: {ex.Message}", Severity.Error);
         }
     }
 
@@ -241,16 +255,24 @@
 
     private async Task DeleteGroup(UserGroup group)
     {
-        var result = await UserGroupService.DeleteGroup(group.ID);
-        if (result)
+        try
         {
-            Snackbar.Add($"Group '{group.GROUP_NAME}' has been deleted successfully", Severity.Success);
+            var result = await UserGroupService.DeleteGroup(group.ID);
+            if (result)
+            {
+                Snackbar.Add($"Group '{group.GROUP_NAME}' has been deleted successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Cannot delete group '{group.GROUP_NAME}'. Please try again.", Severity.Error);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Snackbar.Add($"Cannot delete group '{group.GROUP_NAME}'. Please try again.", Severity.Error);
+            Snackbar.Add($"Error deleting group: {ex.Message}", Severity.Error);
         }
     }
+
 
     private async Task OpenViewMemberDialog(UserGroup group)
     {

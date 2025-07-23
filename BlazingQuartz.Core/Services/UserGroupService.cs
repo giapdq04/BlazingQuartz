@@ -46,7 +46,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving users", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -65,7 +65,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving users", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -83,7 +83,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error adding user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -104,7 +104,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error editing user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
@@ -125,7 +125,7 @@ namespace BlazeQuartz.Core.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error deleting user", ex);
+                throw new Exception(ex.Message);
             }
         }
 
