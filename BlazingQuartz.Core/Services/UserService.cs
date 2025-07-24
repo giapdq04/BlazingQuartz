@@ -49,14 +49,14 @@ namespace BlazeQuartz.Core.Services
                 int offset = page * pageSize;
 
                 string query = "SELECT U.USERID, U.USERNAME, U.PASSWORD, U.Role_Id, UR.ROLE_NAME AS ROLE, GROUP_CONCAT(G.GROUP_NAME, ', ') AS GROUP_NAME " +
-                    "FROM Users U " +
-                    "LEFT JOIN USER_GROUP_MEMBER GM " +
-                    "ON U.USERID = GM.USER_ID " +
-                    "LEFT JOIN USER_GROUPS G " +
-                    "ON GM.GROUP_ID = G.ID " +
-                    "LEFT JOIN USER_ROLES UR " +
-                    "ON UR.ROLE_ID = U.ROLE_ID " +
-                    "WHERE 1 = 1 ";
+                                "FROM Users U " +
+                                "LEFT JOIN USER_GROUP_MEMBER GM " +
+                                "ON U.USERID = GM.USER_ID " +
+                                "LEFT JOIN USER_GROUPS G " +
+                                "ON GM.GROUP_ID = G.ID " +
+                                "LEFT JOIN USER_ROLES UR " +
+                                "ON UR.ROLE_ID = U.ROLE_ID " +
+                                "WHERE 1 = 1 ";
                 string countQuery = "SELECT COUNT(*) FROM USERS WHERE 1=1";
                 var parameters = new DynamicParameters();
 
@@ -69,7 +69,7 @@ namespace BlazeQuartz.Core.Services
                 }
 
                 query +=
-                    "GROUP BY U.USERID, U.USERNAME, U.PASSWORD, U.Role_Id, UR.ROLE_NAME" +
+                    " GROUP BY U.USERID, U.USERNAME, U.PASSWORD, U.Role_Id, UR.ROLE_NAME" +
                     " ORDER BY USERID LIMIT @PageSize OFFSET @Offset";
                 parameters.Add("PageSize", pageSize);
                 parameters.Add("Offset", offset);
